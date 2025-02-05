@@ -19,36 +19,6 @@ class RootLayout extends StatefulWidget {
 
 class _RootLayoutState extends State<RootLayout> {
   void _onItemTapped(int index) {
-    // If center button is tapped
-    if (index == 2) {
-      showModalBottomSheet(
-        context: context,
-        builder: (BuildContext context) {
-          return Container(
-            height: 200,
-            color: Colors.black,
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text(
-                    'Create',
-                    style: TextStyle(color: Colors.white, fontSize: 20),
-                  ),
-                  const SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Close'),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      );
-      return;
-    }
-
     // Navigate based on index
     switch (index) {
       case 0:
@@ -56,6 +26,9 @@ class _RootLayoutState extends State<RootLayout> {
         break;
       case 1:
         context.go('/discover');
+        break;
+      case 2:
+        context.go('/create');
         break;
       case 4:
         context.go('/profile');

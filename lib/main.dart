@@ -9,6 +9,7 @@ import 'screens/register_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/root_layout.dart';
 import 'screens/discover_screen.dart';
+import 'screens/create_screen.dart';
 import 'providers/auth_provider.dart';
 
 void main() async {
@@ -68,6 +69,13 @@ class MyApp extends StatelessWidget {
                 builder: (context, state) => const RootLayout(
                   selectedIndex: 1,
                   child: DiscoverScreen(),
+                ),
+              ),
+              GoRoute(
+                path: '/create',
+                builder: (context, state) => const RootLayout(
+                  selectedIndex: 2,
+                  child: CreateScreen(),
                 ),
               ),
               GoRoute(
