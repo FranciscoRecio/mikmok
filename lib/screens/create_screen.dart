@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class CreateScreen extends StatefulWidget {
   const CreateScreen({super.key});
@@ -23,10 +24,12 @@ class _CreateScreenState extends State<CreateScreen> {
 
   void _handleSubmit() {
     if (_formKey.currentState!.validate()) {
-      // TODO: Handle submission
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Processing Data')),
+        const SnackBar(content: Text('Generating video...')),
       );
+      
+      // Navigate to video result screen
+      context.push('/video-result');
     }
   }
 

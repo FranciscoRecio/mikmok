@@ -10,6 +10,7 @@ import 'screens/profile_screen.dart';
 import 'screens/root_layout.dart';
 import 'screens/discover_screen.dart';
 import 'screens/create_screen.dart';
+import 'screens/video_result_screen.dart';
 import 'providers/auth_provider.dart';
 
 void main() async {
@@ -84,6 +85,10 @@ class MyApp extends StatelessWidget {
                   selectedIndex: 4,
                   child: ProfileScreen(),
                 ),
+              ),
+              GoRoute(
+                path: '/video-result',
+                builder: (context, state) => const VideoResultScreen(),
               ),
             ],
             initialLocation: '/login',
