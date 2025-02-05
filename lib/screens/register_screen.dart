@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
+import '../providers/auth_provider.dart';
+import 'package:go_router/go_router.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -18,18 +21,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Future<void> _register() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
+      debugPrint('Starting registration process...');
       
       try {
-        await _authService.registerWithEmailAndPassword(
+        final result = await _authService.registerWithEmailAndPassword(
           _emailController.text.trim(),
           _passwordController.text.trim(),
         );
-        // Navigate to home screen or show success message
+        debugPrint('Registration API call successful');
+        debugPrint('New user email: ${result.user?.email}');
+        
+        // Force update the auth provider
         if (mounted) {
-          Navigator.of(context).pushReplacementNamed('/home'); // Adjust route as needed
+          debugPrint('Updating auth provider...');
+          final authProvider = Provider.of<AuthProvider>(context, listen: false);
+          authProvider.updateUser(result.user);
+          debugPrint('Auth provider updated');
         }
       } catch (e) {
-        // Show error message
+        debugPrint('Registration error: $e');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(e.toString())),
@@ -38,6 +48,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       } finally {
         if (mounted) {
           setState(() => _isLoading = false);
+          debugPrint('Registration process completed');
         }
       }
     }
@@ -112,8 +123,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               const SizedBox(height: 16),
               TextButton(
                 onPressed: () {
-                  // Navigate to login screen
-                  Navigator.of(context).pushReplacementNamed('/login'); // Adjust route as needed
+                  context.go('/login');
                 },
                 child: const Text('Already have an account? Login'),
               ),

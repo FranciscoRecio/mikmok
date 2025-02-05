@@ -1,54 +1,77 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import 'firebase_options.dart';
-import 'screens/register_screen.dart';
+import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
+import 'screens/register_screen.dart';
+import 'providers/auth_provider.dart';
 
 void main() async {
-  // Ensure Flutter is initialized
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Initialize Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Your App Name',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
+    return ChangeNotifierProvider(
+      create: (_) => AuthProvider(),
+      child: Builder(
+        builder: (context) {
+          final authProvider = Provider.of<AuthProvider>(context);
+          
+          final router = GoRouter(
+            refreshListenable: authProvider,
+            redirect: (context, state) {
+              final isAuthenticated = authProvider.isAuthenticated;
+              debugPrint('GoRouter redirect - isAuthenticated: $isAuthenticated');
+              
+              final isLoginRoute = state.uri.path == '/login';
+              final isRegisterRoute = state.uri.path == '/register';
+              
+              if (!isAuthenticated && !isLoginRoute && !isRegisterRoute) {
+                return '/login';
+              }
+              
+              if (isAuthenticated && (isLoginRoute || isRegisterRoute)) {
+                return '/home';
+              }
+              
+              return null;
+            },
+            routes: [
+              GoRoute(
+                path: '/login',
+                builder: (context, state) => const LoginScreen(),
+              ),
+              GoRoute(
+                path: '/register',
+                builder: (context, state) => const RegisterScreen(),
+              ),
+              GoRoute(
+                path: '/home',
+                builder: (context, state) => const HomeScreen(),
+              ),
+            ],
+            initialLocation: '/login',
+          );
+
+          return MaterialApp.router(
+            routerConfig: router,
+            title: 'Your App Name',
+            theme: ThemeData(
+              primarySwatch: Colors.blue,
+            ),
+          );
+        },
       ),
-      routes: {
-        '/login': (context) => const LoginScreen(),
-        '/register': (context) => const RegisterScreen(),
-      },
-      home: const LoginScreen(),
     );
   }
 }

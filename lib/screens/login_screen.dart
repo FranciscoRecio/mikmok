@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import 'package:go_router/go_router.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -24,10 +25,6 @@ class _LoginScreenState extends State<LoginScreen> {
           _emailController.text.trim(),
           _passwordController.text.trim(),
         );
-        // Navigate to home screen on success
-        if (mounted) {
-          Navigator.of(context).pushReplacementNamed('/home');
-        }
       } catch (e) {
         // Show error message
         if (mounted) {
@@ -109,7 +106,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 16),
               TextButton(
                 onPressed: () {
-                  Navigator.of(context).pushReplacementNamed('/register');
+                  context.go('/register');
                 },
                 child: const Text('Don\'t have an account? Register'),
               ),
