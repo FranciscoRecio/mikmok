@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
 import 'screens/register_screen.dart';
+import 'screens/login_screen.dart';
 
 void main() async {
   // Ensure Flutter is initialized
@@ -23,7 +24,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Your App Name',
       theme: ThemeData(
         // This is the theme of your application.
         //
@@ -44,9 +45,10 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
       routes: {
+        '/login': (context) => const LoginScreen(),
         '/register': (context) => const RegisterScreen(),
       },
-      home: const RegisterScreen(),
+      home: const LoginScreen(),
     );
   }
 }
