@@ -21,25 +21,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Future<void> _register() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
-      debugPrint('Starting registration process...');
       
       try {
         final result = await _authService.registerWithEmailAndPassword(
           _emailController.text.trim(),
           _passwordController.text.trim(),
         );
-        debugPrint('Registration API call successful');
-        debugPrint('New user email: ${result.user?.email}');
         
-        // Force update the auth provider
         if (mounted) {
-          debugPrint('Updating auth provider...');
           final authProvider = Provider.of<AuthProvider>(context, listen: false);
           authProvider.updateUser(result.user);
-          debugPrint('Auth provider updated');
         }
       } catch (e) {
-        debugPrint('Registration error: $e');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(e.toString())),
@@ -48,7 +41,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       } finally {
         if (mounted) {
           setState(() => _isLoading = false);
-          debugPrint('Registration process completed');
         }
       }
     }

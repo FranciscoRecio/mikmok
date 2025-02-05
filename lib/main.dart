@@ -31,8 +31,6 @@ class MyApp extends StatelessWidget {
             refreshListenable: authProvider,
             redirect: (context, state) {
               final isAuthenticated = authProvider.isAuthenticated;
-              debugPrint('GoRouter redirect - isAuthenticated: $isAuthenticated');
-              
               final isLoginRoute = state.uri.path == '/login';
               final isRegisterRoute = state.uri.path == '/register';
               
