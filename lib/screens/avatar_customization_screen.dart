@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
+import '../providers/avatar_provider.dart';
+import '../models/avatar.dart';
 
 class AvatarCustomizationScreen extends StatefulWidget {
-  const AvatarCustomizationScreen({super.key});
+  final Avatar? avatar; // Add this to support editing existing avatars
+  const AvatarCustomizationScreen({super.key, this.avatar});
 
   @override
   State<AvatarCustomizationScreen> createState() => _AvatarCustomizationScreenState();
@@ -10,24 +15,113 @@ class AvatarCustomizationScreen extends StatefulWidget {
 class _AvatarCustomizationScreenState extends State<AvatarCustomizationScreen> {
   String _selectedFeature = 'face';
   Color _selectedColor = Colors.blue;
+  final _nameController = TextEditingController();
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.avatar != null) {
+      _nameController.text = widget.avatar!.name;
+      if (widget.avatar!.customization['color'] != null) {
+        _selectedColor = Color(widget.avatar!.customization['color']);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _saveAvatar() async {
+    if (_nameController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a name for your avatar')),
+      );
+      return;
+    }
+
+    setState(() => _isSaving = true);
+
+    try {
+      final userId = Provider.of<AuthProvider>(context, listen: false).user?.uid;
+      if (userId == null) {
+        throw Exception('User not logged in');
+      }
+
+      final avatarProvider = Provider.of<AvatarProvider>(context, listen: false);
+      
+      if (widget.avatar != null) {
+        // Update existing avatar
+        await avatarProvider.updateAvatar(
+          widget.avatar!.id,
+          {'color': _selectedColor.value},
+        );
+      } else {
+        // Create new avatar
+        await avatarProvider.createAvatar(
+          userId,
+          _nameController.text,
+          {'color': _selectedColor.value},
+        );
+      }
+
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(widget.avatar != null ? 'Avatar updated!' : 'Avatar created!'),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Customize Avatar'),
+        title: Text(widget.avatar != null ? 'Edit Avatar' : 'Create Avatar'),
         actions: [
           TextButton(
-            onPressed: () {
-              // TODO: Save avatar
-              Navigator.pop(context);
-            },
-            child: const Text('Save'),
+            onPressed: _isSaving ? null : _saveAvatar,
+            child: _isSaving
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : const Text('Save'),
           ),
         ],
       ),
       body: Column(
         children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: TextField(
+              controller: _nameController,
+              decoration: const InputDecoration(
+                labelText: 'Avatar Name',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ),
           Expanded(
             flex: 2,
             child: Center(
