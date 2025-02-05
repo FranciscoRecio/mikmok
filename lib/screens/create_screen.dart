@@ -50,7 +50,7 @@ class _CreateScreenState extends State<CreateScreen> {
                     TextFormField(
                       controller: _promptController,
                       decoration: const InputDecoration(
-                        labelText: 'Prompt',
+                        labelText: 'Prompt *',
                         border: OutlineInputBorder(),
                         hintText: 'Enter your prompt',
                       ),
@@ -65,34 +65,30 @@ class _CreateScreenState extends State<CreateScreen> {
                     TextFormField(
                       controller: _contextController,
                       decoration: const InputDecoration(
-                        labelText: 'Context',
+                        labelText: 'Context (Optional)',
                         border: OutlineInputBorder(),
                         hintText: 'Enter the context',
                       ),
                       maxLines: 3,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter the context';
-                        }
-                        return null;
-                      },
                     ),
                     const SizedBox(height: 24),
                     TextFormField(
                       controller: _scriptController,
                       decoration: const InputDecoration(
-                        labelText: 'Script',
+                        labelText: 'Script (Optional)',
                         border: OutlineInputBorder(),
                         hintText: 'Enter your script',
                         alignLabelWithHint: true,
                       ),
                       maxLines: 10,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter a script';
-                        }
-                        return null;
-                      },
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      '* Required field',
+                      style: TextStyle(
+                        color: Colors.grey,
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                 ),
