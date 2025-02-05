@@ -109,9 +109,29 @@ class _AvatarsScreenState extends State<AvatarsScreen> {
                               ),
                               TextButton(
                                 onPressed: () {
-                                  Provider.of<AvatarProvider>(context, listen: false)
-                                      .deleteAvatar(avatar.id);
+                                  final scaffoldMessenger = ScaffoldMessenger.of(context);
+                                  final avatarProvider = Provider.of<AvatarProvider>(context, listen: false);
+                                  
+                                  avatarProvider.deleteAvatar(avatar.id);
                                   Navigator.pop(context);
+                                  
+                                  scaffoldMessenger.showSnackBar(
+                                    SnackBar(
+                                      content: const Text('Avatar deleted'),
+                                      action: SnackBarAction(
+                                        label: 'Undo',
+                                        onPressed: () {
+                                          avatarProvider.undoDelete().then((_) {
+                                            scaffoldMessenger.showSnackBar(
+                                              const SnackBar(
+                                                content: Text('Avatar restored'),
+                                              ),
+                                            );
+                                          });
+                                        },
+                                      ),
+                                    ),
+                                  );
                                 },
                                 style: TextButton.styleFrom(
                                   foregroundColor: Colors.red,

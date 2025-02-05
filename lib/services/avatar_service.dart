@@ -43,4 +43,18 @@ class AvatarService {
   Future<void> deleteAvatar(String avatarId) async {
     await _firestore.collection('avatars').doc(avatarId).delete();
   }
+
+  // Get avatar data
+  Future<Map<String, dynamic>?> getAvatar(String avatarId) async {
+    final doc = await _firestore.collection('avatars').doc(avatarId).get();
+    return doc.data();
+  }
+
+  // Create avatar with specific ID (for undo)
+  Future<void> createAvatarWithId(String avatarId, Map<String, dynamic> data) async {
+    await _firestore.collection('avatars').doc(avatarId).set({
+      ...data,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
 } 

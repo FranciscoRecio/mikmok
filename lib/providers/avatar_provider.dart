@@ -7,6 +7,8 @@ class AvatarProvider extends ChangeNotifier {
   List<Avatar> _avatars = [];
   bool _isLoading = false;
   String? _error;
+  Avatar? _lastDeletedAvatar;
+  Map<String, dynamic>? _lastDeletedData;
 
   List<Avatar> get avatars => _avatars;
   bool get isLoading => _isLoading;
@@ -52,7 +54,39 @@ class AvatarProvider extends ChangeNotifier {
       _error = null;
       notifyListeners();
 
+      // Store the avatar data before deleting
+      final avatarDoc = await _avatarService.getAvatar(avatarId);
+      if (avatarDoc != null) {
+        _lastDeletedAvatar = Avatar.fromMap(avatarId, avatarDoc);
+        _lastDeletedData = avatarDoc;
+      }
+
       await _avatarService.deleteAvatar(avatarId);
+    } catch (e) {
+      _error = e.toString();
+      _lastDeletedAvatar = null;
+      _lastDeletedData = null;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> undoDelete() async {
+    if (_lastDeletedAvatar == null || _lastDeletedData == null) return;
+
+    try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      await _avatarService.createAvatarWithId(
+        _lastDeletedAvatar!.id,
+        _lastDeletedData!,
+      );
+
+      _lastDeletedAvatar = null;
+      _lastDeletedData = null;
     } catch (e) {
       _error = e.toString();
     } finally {

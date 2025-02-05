@@ -96,6 +96,67 @@ class _AvatarCustomizationScreenState extends State<AvatarCustomizationScreen> {
       appBar: AppBar(
         title: Text(widget.avatar != null ? 'Edit Avatar' : 'Create Avatar'),
         actions: [
+          if (widget.avatar != null) // Only show delete for existing avatars
+            IconButton(
+              icon: const Icon(Icons.delete),
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Delete Avatar'),
+                    content: Text('Are you sure you want to delete ${widget.avatar!.name}?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Cancel'),
+                      ),
+                      TextButton(
+                        onPressed: () async {
+                          final scaffoldMessenger = ScaffoldMessenger.of(context);
+                          final avatarProvider = Provider.of<AvatarProvider>(context, listen: false);
+                          
+                          try {
+                            await avatarProvider.deleteAvatar(widget.avatar!.id);
+                            if (mounted) {
+                              Navigator.pop(context); // Close dialog
+                              Navigator.pop(context); // Return to avatars screen
+                              scaffoldMessenger.showSnackBar(
+                                SnackBar(
+                                  content: const Text('Avatar deleted'),
+                                  action: SnackBarAction(
+                                    label: 'Undo',
+                                    onPressed: () {
+                                      avatarProvider.undoDelete().then((_) {
+                                        scaffoldMessenger.showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Avatar restored'),
+                                          ),
+                                        );
+                                      });
+                                    },
+                                  ),
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            if (mounted) {
+                              Navigator.pop(context); // Close dialog
+                              scaffoldMessenger.showSnackBar(
+                                SnackBar(content: Text('Error deleting avatar: $e')),
+                              );
+                            }
+                          }
+                        },
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.red,
+                        ),
+                        child: const Text('Delete'),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
           TextButton(
             onPressed: _isSaving ? null : _saveAvatar,
             child: _isSaving
