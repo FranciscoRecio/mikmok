@@ -11,6 +11,7 @@ import 'screens/root_layout.dart';
 import 'screens/discover_screen.dart';
 import 'screens/create_screen.dart';
 import 'screens/video_result_screen.dart';
+import 'screens/avatars_screen.dart';
 import 'providers/auth_provider.dart';
 
 void main() async {
@@ -89,6 +90,13 @@ class MyApp extends StatelessWidget {
               GoRoute(
                 path: '/video-result',
                 builder: (context, state) => const VideoResultScreen(),
+              ),
+              GoRoute(
+                path: '/avatars',
+                builder: (context, state) => const RootLayout(
+                  selectedIndex: 3,
+                  child: AvatarsScreen(),
+                ),
               ),
             ],
             initialLocation: '/login',

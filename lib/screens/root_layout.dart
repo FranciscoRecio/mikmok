@@ -30,6 +30,9 @@ class _RootLayoutState extends State<RootLayout> {
       case 2:
         context.go('/create');
         break;
+      case 3:
+        context.go('/avatars');
+        break;
       case 4:
         context.go('/profile');
         break;
@@ -77,8 +80,8 @@ class _RootLayoutState extends State<RootLayout> {
                 label: '',
               ),
               const BottomNavigationBarItem(
-                icon: Icon(Icons.inbox),
-                label: 'Inbox',
+                icon: Icon(Icons.face),
+                label: 'Avatars',
               ),
               const BottomNavigationBarItem(
                 icon: Icon(Icons.person),
