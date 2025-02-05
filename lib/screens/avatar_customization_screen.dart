@@ -57,6 +57,7 @@ class _AvatarCustomizationScreenState extends State<AvatarCustomizationScreen> {
         // Update existing avatar
         await avatarProvider.updateAvatar(
           widget.avatar!.id,
+          _nameController.text,
           {'color': _selectedColor.value},
         );
       } else {

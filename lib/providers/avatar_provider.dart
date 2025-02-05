@@ -31,13 +31,13 @@ class AvatarProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> updateAvatar(String avatarId, Map<String, dynamic> customization) async {
+  Future<void> updateAvatar(String avatarId, String name, Map<String, dynamic> customization) async {
     try {
       _isLoading = true;
       _error = null;
       notifyListeners();
 
-      await _avatarService.updateAvatar(avatarId, customization);
+      await _avatarService.updateAvatar(avatarId, name, customization);
     } catch (e) {
       _error = e.toString();
     } finally {

@@ -31,8 +31,9 @@ class AvatarService {
   }
 
   // Update an existing avatar
-  Future<void> updateAvatar(String avatarId, Map<String, dynamic> customization) async {
+  Future<void> updateAvatar(String avatarId, String name, Map<String, dynamic> customization) async {
     await _firestore.collection('avatars').doc(avatarId).update({
+      'name': name,
       'customization': customization,
       'updatedAt': FieldValue.serverTimestamp(),
     });
