@@ -54,6 +54,9 @@ class _RootLayoutState extends State<RootLayout> {
       case 0:
         context.go('/home');
         break;
+      case 1:
+        context.go('/discover');
+        break;
       case 4:
         context.go('/profile');
         break;
