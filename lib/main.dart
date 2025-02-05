@@ -14,6 +14,7 @@ import 'screens/video_result_screen.dart';
 import 'screens/avatars_screen.dart';
 import 'screens/avatar_customization_screen.dart';
 import 'providers/auth_provider.dart';
+import 'providers/avatar_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,8 +29,11 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => AuthProvider(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => AvatarProvider()),
+      ],
       child: Builder(
         builder: (context) {
           final authProvider = Provider.of<AuthProvider>(context);
