@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import '../providers/auth_provider.dart';
 import 'package:go_router/go_router.dart';
+import '../models/user_model.dart';
+import '../services/user_service.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -16,6 +18,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _authService = AuthService();
+  final _userService = UserService();
   bool _isLoading = false;
 
   Future<void> _register() async {
@@ -24,13 +27,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
     setState(() => _isLoading = true);
     
     try {
-      // Move to a compute isolate if possible
+      // Register with Firebase Auth
       final result = await _authService.registerWithEmailAndPassword(
         _emailController.text.trim(),
         _passwordController.text.trim(),
       );
       
       if (!mounted) return;
+
+      // Create user profile in Firestore
+      final user = UserModel(
+        uid: result.user!.uid,
+        email: result.user!.email!,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      
+      await _userService.createUserProfile(user);
       
       // Update auth state
       Provider.of<AuthProvider>(context, listen: false)
