@@ -6,6 +6,7 @@ import 'firebase_options.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
+import 'screens/profile_screen.dart';
 import 'providers/auth_provider.dart';
 
 void main() async {
@@ -56,6 +57,10 @@ class MyApp extends StatelessWidget {
               GoRoute(
                 path: '/home',
                 builder: (context, state) => const HomeScreen(),
+              ),
+              GoRoute(
+                path: '/profile',
+                builder: (context, state) => const ProfileScreen(),
               ),
             ],
             initialLocation: '/login',
