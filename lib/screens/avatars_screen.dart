@@ -24,38 +24,38 @@ class _AvatarsScreenState extends State<AvatarsScreen> {
       return const Center(child: Text('Please log in to view avatars'));
     }
 
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Your Avatars',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Your Avatars',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () => context.push('/avatar-customization'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).primaryColor,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => context.push('/avatar-customization'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).primaryColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.add),
+                  SizedBox(width: 8),
+                  Text('Create New Avatar'),
+                ],
+              ),
             ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.add),
-                SizedBox(width: 8),
-                Text('Create New Avatar'),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          Expanded(
-            child: StreamBuilder<List<Avatar>>(
+            const SizedBox(height: 24),
+            StreamBuilder<List<Avatar>>(
               stream: Provider.of<AvatarProvider>(context).getUserAvatars(userId),
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
@@ -70,12 +70,15 @@ class _AvatarsScreenState extends State<AvatarsScreen> {
 
                 if (avatars.isEmpty) {
                   return const Center(
-                    child: Text(
-                      'No avatars yet.\nCreate one to get started!',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey,
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 32.0),
+                      child: Text(
+                        'No avatars yet.\nCreate one to get started!',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey,
+                        ),
                       ),
                     ),
                   );
@@ -87,12 +90,13 @@ class _AvatarsScreenState extends State<AvatarsScreen> {
                     crossAxisSpacing: 16,
                     mainAxisSpacing: 16,
                   ),
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
                   itemCount: avatars.length,
                   itemBuilder: (context, index) {
                     final avatar = avatars[index];
                     return GestureDetector(
                       onTap: () {
-                        // TODO: Navigate to edit avatar
                         context.push('/avatar-customization', extra: avatar);
                       },
                       onLongPress: () {
@@ -181,24 +185,24 @@ class _AvatarsScreenState extends State<AvatarsScreen> {
                 );
               },
             ),
-          ),
-          const SizedBox(height: 24),
-          const Text(
-            'Sample Avatars',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
+            const SizedBox(height: 32),
+            const Text(
+              'Sample Avatars',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: GridView.builder(
+            const SizedBox(height: 16),
+            GridView.builder(
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
                 crossAxisSpacing: 16,
                 mainAxisSpacing: 16,
               ),
-              itemCount: 6, // Number of sample avatars
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: 6,
               itemBuilder: (context, index) {
                 final color = Colors.primaries[index % Colors.primaries.length];
                 return GestureDetector(
@@ -283,8 +287,9 @@ class _AvatarsScreenState extends State<AvatarsScreen> {
                 );
               },
             ),
-          ),
-        ],
+            const SizedBox(height: 16),
+          ],
+        ),
       ),
     );
   }
