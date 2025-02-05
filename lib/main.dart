@@ -12,6 +12,7 @@ import 'screens/discover_screen.dart';
 import 'screens/create_screen.dart';
 import 'screens/video_result_screen.dart';
 import 'screens/avatars_screen.dart';
+import 'screens/avatar_customization_screen.dart';
 import 'providers/auth_provider.dart';
 
 void main() async {
@@ -97,6 +98,10 @@ class MyApp extends StatelessWidget {
                   selectedIndex: 3,
                   child: AvatarsScreen(),
                 ),
+              ),
+              GoRoute(
+                path: '/avatar-customization',
+                builder: (context, state) => const AvatarCustomizationScreen(),
               ),
             ],
             initialLocation: '/login',
