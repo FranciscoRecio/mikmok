@@ -1,35 +1,34 @@
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:video_compress/video_compress.dart';
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
 import 'dart:convert';
 
 class VideoGenerationService {
-  final String baseUrl = 'http://13.58.155.61:8000';
+  final String baseUrl = 'http://3.128.202.79:8000';
   final FirebaseStorage _storage = FirebaseStorage.instance;
 
-  Future<String> generateVideo(String text, String imageUrl) async {
+  Future<String> generateVideo(String text, List<int> imageBytes, String userId) async {
     try {
-      // Download the SVG image first
-      final imageResponse = await http.get(Uri.parse(imageUrl));
-      if (imageResponse.statusCode != 200) {
-        throw Exception('Failed to download avatar image');
-      }
-
       // Create multipart request
       final request = http.MultipartRequest('POST', Uri.parse('$baseUrl/generate/video/'));
       request.headers.addAll({
         'accept': 'application/json',
       });
 
-      // Add text and style params
+      // Add text and required fields
       request.fields['text'] = text;
       request.fields['style_params'] = '{}';
+      request.fields['user_id'] = userId;
+      request.fields['is_sample'] = 'true'; // For now, using sample videos
 
-      // Add the image file
+      // Add the image file directly from bytes
       request.files.add(
         http.MultipartFile.fromBytes(
           'photo',
-          imageResponse.bodyBytes,
+          imageBytes,
           filename: 'avatar.svg',
           contentType: MediaType('image', 'svg+xml'),
         ),
@@ -67,27 +66,7 @@ class VideoGenerationService {
         if (status['status'] == 'SUCCESS') {
           final result = status['result'];
           if (result != null && result['video_url'] != null) {
-            final sourceUrl = result['video_url'];
-            print('Got source URL: $sourceUrl'); // Debug
-            
-            // Download video
-            final videoResponse = await http.get(Uri.parse(sourceUrl));
-            if (videoResponse.statusCode != 200) {
-              throw Exception('Failed to download video');
-            }
-
-            // Upload to Firebase Storage
-            final ref = _storage.ref().child('videos/$taskId.mp4');
-            await ref.putData(
-              videoResponse.bodyBytes,
-              SettableMetadata(contentType: 'video/mp4'),
-            );
-
-            // Get Firebase Storage URL
-            final firebaseUrl = await ref.getDownloadURL();
-            print('Uploaded to Firebase: $firebaseUrl'); // Debug
-            
-            return firebaseUrl;
+            return result['video_url'];
           }
           throw Exception('No video URL in result');
         }

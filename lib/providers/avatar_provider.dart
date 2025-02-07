@@ -1,10 +1,13 @@
 import 'package:flutter/foundation.dart';
 import '../models/avatar.dart';
 import '../services/avatar_service.dart';
-import '../services/storage_service.dart';
+import '../services/avatar_generation_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AvatarProvider extends ChangeNotifier {
   final AvatarService _avatarService = AvatarService();
+  final AvatarGenerationService _avatarGenerationService = AvatarGenerationService();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   List<Avatar> _avatars = [];
   bool _isLoading = false;
   String? _error;
@@ -19,28 +22,35 @@ class AvatarProvider extends ChangeNotifier {
     return _avatarService.getUserAvatars(userId);
   }
 
-  Future<void> createAvatar(
-    String userId, 
-    String name, 
-    Map<String, dynamic> customization,
-  ) async {
+  Future<void> createAvatar(String userId, String prompt, Map<String, dynamic> styleParams) async {
     try {
-      // First create the avatar document to get an ID
-      final docRef = await _avatarService.createAvatar(userId, name, customization);
+      _isLoading = true;
+      notifyListeners();
+
+      final avatarService = AvatarGenerationService();
       
-      // Get the source URL from the API response
-      final sourceUrl = customization['imageUrl'] as String;
+      // Generate avatar and get task ID
+      final taskId = await avatarService.generateAvatar(prompt, styleParams);
       
-      // Store in Firebase Storage and get new URL
-      final storageUrl = await StorageService().storeAvatarFromUrl(
-        userId,
-        docRef.id,
-        sourceUrl,
-      );
-      
-      // Update the avatar document with the storage URL
-      await _avatarService.updateAvatarUrl(docRef.id, storageUrl);
+      // Wait for the final image URL
+      final imageUrl = await avatarService.waitForAvatar(taskId);
+      print('Got avatar URL: $imageUrl'); // Debug
+
+      // Save to Firestore
+      await _firestore.collection('avatars').add({
+        'userId': userId,
+        'prompt': prompt,
+        'imageUrl': imageUrl,
+        'name': prompt,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      _isLoading = false;
+      notifyListeners();
     } catch (e) {
+      _isLoading = false;
+      _error = e.toString();
+      notifyListeners();
       print('Error creating avatar: $e');
       rethrow;
     }

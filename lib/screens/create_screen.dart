@@ -5,6 +5,8 @@ import 'package:mikmok/providers/auth_provider.dart';
 import 'package:mikmok/providers/avatar_provider.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:mikmok/services/video_generation_service.dart';
+import 'package:http/http.dart' as http;
+import 'dart:typed_data';
 
 class CreateScreen extends StatefulWidget {
   const CreateScreen({super.key});
@@ -19,6 +21,7 @@ class _CreateScreenState extends State<CreateScreen> {
   final _contextController = TextEditingController();
   final _scriptController = TextEditingController();
   String? _selectedAvatarId;
+  Map<String, List<int>> _avatarImageBytes = {}; // Store image bytes by avatar ID
 
   @override
   void dispose() {
@@ -35,19 +38,28 @@ class _CreateScreenState extends State<CreateScreen> {
           const SnackBar(content: Text('Generating video...')),
         );
 
+        final userId = Provider.of<AuthProvider>(context, listen: false).user!.uid;
+        
+        // Get avatar once
         final avatars = await Provider.of<AvatarProvider>(context, listen: false)
-            .getUserAvatars(Provider.of<AuthProvider>(context, listen: false).user!.uid)
+            .getUserAvatars(userId)
             .first;
-        final selectedAvatar = avatars.firstWhere((avatar) => avatar.id == _selectedAvatarId);
 
         if (_selectedAvatarId == null) {
           throw Exception('Please select an avatar');
         }
 
+        // Use cached image bytes
+        final imageBytes = _avatarImageBytes[_selectedAvatarId];
+        if (imageBytes == null) {
+          throw Exception('Avatar image not loaded');
+        }
+
         final videoService = VideoGenerationService();
         final taskId = await videoService.generateVideo(
           _promptController.text,
-          selectedAvatar.imageUrl,
+          imageBytes,
+          userId,
         );
 
         if (!mounted) return;
@@ -60,6 +72,20 @@ class _CreateScreenState extends State<CreateScreen> {
           SnackBar(content: Text('Error: $e')),
         );
       }
+    }
+  }
+
+  // Add this method to load and cache image bytes
+  Future<void> _loadAvatarImage(String avatarId, String imageUrl) async {
+    try {
+      final response = await http.get(Uri.parse(imageUrl));
+      if (response.statusCode == 200) {
+        setState(() {
+          _avatarImageBytes[avatarId] = response.bodyBytes;
+        });
+      }
+    } catch (e) {
+      print('Error loading avatar image: $e');
     }
   }
 
@@ -120,9 +146,17 @@ class _CreateScreenState extends State<CreateScreen> {
                               SizedBox(
                                 width: 60,
                                 height: 60,
-                                child: SvgPicture.network(
-                                  avatars.firstWhere((a) => a.id == _selectedAvatarId).imageUrl,
-                                  placeholderBuilder: (context) => const CircularProgressIndicator(color: Colors.green),
+                                child: FutureBuilder(
+                                  future: _loadAvatarImage(_selectedAvatarId!, avatars.firstWhere((a) => a.id == _selectedAvatarId).imageUrl),
+                                  builder: (context, snapshot) {
+                                    if (_avatarImageBytes.containsKey(_selectedAvatarId)) {
+                                      return SvgPicture.memory(
+                                        Uint8List.fromList(_avatarImageBytes[_selectedAvatarId]!),
+                                        placeholderBuilder: (context) => const CircularProgressIndicator(color: Colors.green),
+                                      );
+                                    }
+                                    return const CircularProgressIndicator(color: Colors.green);
+                                  },
                                 ),
                               ),
                           ],
