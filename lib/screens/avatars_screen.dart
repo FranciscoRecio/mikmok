@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../providers/auth_provider.dart';
 import '../providers/avatar_provider.dart';
 import '../models/avatar.dart';
@@ -193,100 +194,115 @@ class _AvatarsScreenState extends State<AvatarsScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            GridView.builder(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-              ),
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: 6,
-              itemBuilder: (context, index) {
-                final color = Colors.primaries[index % Colors.primaries.length];
-                return GestureDetector(
-                  onTap: () {
-                    // Show save confirmation
-                    showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: const Text('Save Avatar'),
-                        content: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Text('Would you like to save this avatar?'),
-                            const SizedBox(height: 16),
-                            TextField(
-                              decoration: const InputDecoration(
-                                labelText: 'Avatar Name',
-                                border: OutlineInputBorder(),
+            StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('sample_avatars')
+                  .orderBy('order')
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}'));
+                }
+
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                final sampleAvatars = snapshot.data?.docs ?? [];
+
+                return GridView.builder(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                  ),
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: sampleAvatars.length,
+                  itemBuilder: (context, index) {
+                    final avatar = sampleAvatars[index].data() as Map<String, dynamic>;
+                    final imageUrl = avatar['imageUrl'] as String;
+                    final name = avatar['name'] as String;
+
+                    return GestureDetector(
+                      onTap: () {
+                        showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('Save Avatar'),
+                            content: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Text('Would you like to save this avatar?'),
+                                const SizedBox(height: 16),
+                                TextField(
+                                  decoration: const InputDecoration(
+                                    labelText: 'Avatar Name',
+                                    border: OutlineInputBorder(),
+                                  ),
+                                  onChanged: (value) => avatarName = value,
+                                ),
+                              ],
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text('Cancel'),
                               ),
-                              onChanged: (value) => avatarName = value,
+                              TextButton(
+                                onPressed: () {
+                                  if (userId != null) {
+                                    Provider.of<AvatarProvider>(context, listen: false).createAvatar(
+                                      userId,
+                                      avatarName.isNotEmpty ? avatarName : name,
+                                      {'image_url': imageUrl},
+                                    );
+                                    Navigator.pop(context);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('Avatar saved!')),
+                                    );
+                                  }
+                                },
+                                child: const Text('Save'),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.grey[200],
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              width: 80,
+                              height: 80,
+                              child: SvgPicture.network(
+                                imageUrl,
+                                placeholderBuilder: (context) => const Center(
+                                  child: CircularProgressIndicator(),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              name,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ],
                         ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text('Cancel'),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              final userId = Provider.of<AuthProvider>(context, listen: false).user?.uid;
-                              if (userId != null) {
-                                Provider.of<AvatarProvider>(context, listen: false).createAvatar(
-                                  userId,
-                                  avatarName.isNotEmpty ? avatarName : 'Avatar ${index + 1}',
-                                  {'color': color.value},
-                                );
-                                Navigator.pop(context);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Avatar saved!')),
-                                );
-                              }
-                            },
-                            child: const Text('Save'),
-                          ),
-                        ],
                       ),
                     );
                   },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.grey[200],
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 80,
-                          height: 80,
-                          decoration: const BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.face,
-                            size: 50,
-                            color: color,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Avatar ${index + 1}',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 );
               },
             ),
-            const SizedBox(height: 16),
           ],
         ),
       ),
