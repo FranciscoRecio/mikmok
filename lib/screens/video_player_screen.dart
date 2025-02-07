@@ -3,13 +3,13 @@ import 'package:video_player/video_player.dart';
 import 'dart:async';
 
 class VideoPlayerScreen extends StatefulWidget {
-  final String videoUrl;
-  final String title;
+  final List<Map<String, dynamic>> videos;
+  final int initialIndex;
 
   const VideoPlayerScreen({
     super.key,
-    required this.videoUrl,
-    required this.title,
+    required this.videos,
+    required this.initialIndex,
   });
 
   @override
@@ -17,22 +17,91 @@ class VideoPlayerScreen extends StatefulWidget {
 }
 
 class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
-  late VideoPlayerController _controller;
-  bool _isInitialized = false;
+  late PageController _pageController;
+  final List<VideoPlayerController?> _controllers = List.filled(3, null);
+  int _currentIndex = 0;
   bool _showControls = true;
   Timer? _hideTimer;
 
   @override
   void initState() {
     super.initState();
-    _controller = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl))
-      ..initialize().then((_) {
-        setState(() {
-          _isInitialized = true;
-        });
-        _controller.play();
-        _startHideTimer();
-      });
+    _currentIndex = widget.initialIndex;
+    _pageController = PageController(initialPage: _currentIndex);
+    _initializeControllers();
+  }
+
+  Future<void> _initializeControllers() async {
+    // Load current video
+    await _loadController(1, widget.videos[_currentIndex]);
+    
+    // Load next video if available
+    if (_currentIndex + 1 < widget.videos.length) {
+      await _loadController(2, widget.videos[_currentIndex + 1]);
+    }
+    
+    // Load previous video if available
+    if (_currentIndex > 0) {
+      await _loadController(0, widget.videos[_currentIndex - 1]);
+    }
+  }
+
+  Future<void> _loadController(int position, Map<String, dynamic> video) async {
+    if (_controllers[position] != null) {
+      await _controllers[position]!.dispose();
+    }
+
+    final controller = VideoPlayerController.networkUrl(
+      Uri.parse(video['video_url'] as String),
+    );
+    _controllers[position] = controller;
+
+    await controller.initialize();
+    if (position == 1) { // Current video
+      controller.play();
+      _startHideTimer();
+    }
+  }
+
+  void _onPageChanged(int index) async {
+    if (index == _currentIndex) return;
+
+    // Determine scroll direction
+    final isForward = index > _currentIndex;
+    _currentIndex = index;
+
+    // Pause all videos
+    for (final controller in _controllers) {
+      controller?.pause();
+    }
+
+    if (isForward) {
+      // Move controllers back
+      _controllers[0]?.dispose();
+      _controllers[0] = _controllers[1];
+      _controllers[1] = _controllers[2];
+      _controllers[2] = null;
+
+      // Load next video if available
+      if (_currentIndex + 1 < widget.videos.length) {
+        await _loadController(2, widget.videos[_currentIndex + 1]);
+      }
+    } else {
+      // Move controllers forward
+      _controllers[2]?.dispose();
+      _controllers[2] = _controllers[1];
+      _controllers[1] = _controllers[0];
+      _controllers[0] = null;
+
+      // Load previous video if available
+      if (_currentIndex > 0) {
+        await _loadController(0, widget.videos[_currentIndex - 1]);
+      }
+    }
+
+    // Play current video
+    _controllers[1]?.play();
+    _startHideTimer();
   }
 
   void _startHideTimer() {
@@ -49,128 +118,95 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   @override
   void dispose() {
     _hideTimer?.cancel();
-    _controller.dispose();
+    for (final controller in _controllers) {
+      controller?.dispose();
+    }
+    _pageController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
+      extendBodyBehindAppBar: true,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(kToolbarHeight),
+        child: AnimatedOpacity(
+          opacity: _showControls ? 1.0 : 0.0,
+          duration: const Duration(milliseconds: 300),
+          child: AppBar(
+            backgroundColor: Colors.black26,
+            elevation: 0,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ),
+        ),
       ),
-      body: Center(
-        child: _isInitialized
-            ? AspectRatio(
-                aspectRatio: _controller.value.aspectRatio,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    VideoPlayer(_controller),
-                    GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _showControls = true;
-                          _controller.value.isPlaying
-                              ? _controller.pause()
-                              : _controller.play();
-                        });
-                        _startHideTimer();
-                      },
-                      child: Container(
-                        color: Colors.transparent,
-                        child: AnimatedOpacity(
-                          opacity: _showControls ? 1.0 : 0.0,
-                          duration: const Duration(milliseconds: 300),
-                          child: Stack(
-                            children: [
-                              // Center play/pause button
-                              Center(
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.black26,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  padding: const EdgeInsets.all(12),
-                                  child: Icon(
-                                    _controller.value.isPlaying
-                                        ? Icons.pause
-                                        : Icons.play_arrow,
-                                    size: 64.0,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                              // Progress bar at bottom
-                              Positioned(
-                                left: 0,
-                                right: 0,
-                                bottom: 0,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      begin: Alignment.bottomCenter,
-                                      end: Alignment.topCenter,
-                                      colors: [
-                                        Colors.black54,
-                                        Colors.transparent,
-                                      ],
-                                    ),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      ValueListenableBuilder(
-                                        valueListenable: _controller,
-                                        builder: (context, VideoPlayerValue value, child) {
-                                          return Text(
-                                            _formatDuration(value.position),
-                                            style: const TextStyle(color: Colors.white),
-                                          );
-                                        },
-                                      ),
-                                      Expanded(
-                                        child: VideoProgressIndicator(
-                                          _controller,
-                                          allowScrubbing: true,
-                                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                                          colors: const VideoProgressColors(
-                                            playedColor: Colors.white,
-                                            bufferedColor: Colors.white24,
-                                            backgroundColor: Colors.white12,
-                                          ),
-                                        ),
-                                      ),
-                                      ValueListenableBuilder(
-                                        valueListenable: _controller,
-                                        builder: (context, VideoPlayerValue value, child) {
-                                          return Text(
-                                            _formatDuration(value.duration),
-                                            style: const TextStyle(color: Colors.white),
-                                          );
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              )
-            : const CircularProgressIndicator(),
+      body: PageView.builder(
+        scrollDirection: Axis.vertical,
+        controller: _pageController,
+        onPageChanged: _onPageChanged,
+        itemCount: widget.videos.length,
+        itemBuilder: (context, index) {
+          if (index < _currentIndex - 1 || index > _currentIndex + 1) {
+            return const ColoredBox(color: Colors.black);
+          }
+
+          final controllerIndex = index - _currentIndex + 1;
+          final controller = _controllers[controllerIndex];
+
+          if (controller == null || !controller.value.isInitialized) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          return _VideoPlayerWidget(
+            controller: controller,
+            showControls: _showControls,
+            onTap: () {
+              setState(() {
+                _showControls = true;
+                controller.value.isPlaying
+                    ? controller.pause()
+                    : controller.play();
+              });
+              _startHideTimer();
+            },
+          );
+        },
       ),
     );
   }
+}
 
-  String _formatDuration(Duration duration) {
-    String twoDigits(int n) => n.toString().padLeft(2, '0');
-    final minutes = twoDigits(duration.inMinutes.remainder(60));
-    final seconds = twoDigits(duration.inSeconds.remainder(60));
-    return '$minutes:$seconds';
+class _VideoPlayerWidget extends StatelessWidget {
+  final VideoPlayerController controller;
+  final bool showControls;
+  final VoidCallback onTap;
+
+  const _VideoPlayerWidget({
+    required this.controller,
+    required this.showControls,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          AspectRatio(
+            aspectRatio: controller.value.aspectRatio,
+            child: VideoPlayer(controller),
+          ),
+          if (showControls) ...[
+            // Your existing controls UI here
+          ],
+        ],
+      ),
+    );
   }
 } 

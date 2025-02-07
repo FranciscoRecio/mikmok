@@ -80,14 +80,12 @@ class VideosScreen extends StatelessWidget {
 
               return GestureDetector(
                 onTap: () {
-                  final videoUrl = video['video_url'] as String;
-                  final title = video['title'] as String;
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => VideoPlayerScreen(
-                        videoUrl: videoUrl,
-                        title: title,
+                        videos: videos.map((doc) => doc.data() as Map<String, dynamic>).toList(),
+                        initialIndex: index,
                       ),
                     ),
                   );
