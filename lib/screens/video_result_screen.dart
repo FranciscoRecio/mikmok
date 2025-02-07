@@ -1,38 +1,69 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
+import 'package:mikmok/services/video_generation_service.dart';
 
 class VideoResultScreen extends StatefulWidget {
-  const VideoResultScreen({super.key});
+  final String taskId;
+  const VideoResultScreen({super.key, required this.taskId});
 
   @override
   State<VideoResultScreen> createState() => _VideoResultScreenState();
 }
 
 class _VideoResultScreenState extends State<VideoResultScreen> {
-  late VideoPlayerController _controller;
+  VideoPlayerController? _controller;
   bool _isInitialized = false;
 
   @override
   void initState() {
     super.initState();
-    // Initialize the controller with a sample video
-    _controller = VideoPlayerController.network(
-      'https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4',
-    )..initialize().then((_) {
-        // Ensure the first frame is shown
-        setState(() {
-          _isInitialized = true;
+    _initializeVideo();
+  }
+
+  Future<void> _initializeVideo() async {
+    try {
+      // Wait for the video URL from the task
+      final videoService = VideoGenerationService();
+      final videoUrl = await videoService.waitForVideo(widget.taskId);
+      
+      print('Attempting to load video from URL: $videoUrl'); // Debug print
+
+      // Initialize video player with the URL
+      _controller = VideoPlayerController.network(
+        videoUrl,
+        httpHeaders: {
+          'accept': 'application/json',
+          // Add any necessary headers
+        },
+      )..initialize().then((_) {
+          if (mounted) {
+            setState(() {
+              _isInitialized = true;
+            });
+            _controller?.play();
+            _controller?.setLooping(true);
+          }
+        }).catchError((error) {
+          print('Video initialization error: $error');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Error initializing video: $error')),
+            );
+          }
         });
-        // Start playing the video
-        _controller.play();
-        // Enable looping
-        _controller.setLooping(true);
-      });
+    } catch (e) {
+      print('Error in _initializeVideo: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading video: $e')),
+        );
+      }
+    }
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _controller?.dispose();
     super.dispose();
   }
 
@@ -44,14 +75,14 @@ class _VideoResultScreenState extends State<VideoResultScreen> {
       ),
       body: Column(
         children: [
-          if (_isInitialized)
+          if (_isInitialized && _controller != null)
             AspectRatio(
-              aspectRatio: _controller.value.aspectRatio,
+              aspectRatio: _controller!.value.aspectRatio,
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  VideoPlayer(_controller),
-                  _PlayPauseOverlay(controller: _controller),
+                  VideoPlayer(_controller!),
+                  _PlayPauseOverlay(controller: _controller!),
                 ],
               ),
             )
@@ -60,41 +91,43 @@ class _VideoResultScreenState extends State<VideoResultScreen> {
               child: CircularProgressIndicator(),
             ),
           const SizedBox(height: 16),
-          _VideoProgressIndicator(controller: _controller),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.replay_10),
-                  onPressed: () {
-                    final newPosition = _controller.value.position - const Duration(seconds: 10);
-                    _controller.seekTo(newPosition);
-                  },
-                ),
-                IconButton(
-                  icon: Icon(
-                    _controller.value.isPlaying ? Icons.pause : Icons.play_arrow,
+          if (_controller != null)
+            _VideoProgressIndicator(controller: _controller!),
+          if (_controller != null)
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.replay_10),
+                    onPressed: () {
+                      final newPosition = _controller!.value.position - const Duration(seconds: 10);
+                      _controller!.seekTo(newPosition);
+                    },
                   ),
-                  onPressed: () {
-                    setState(() {
-                      _controller.value.isPlaying
-                          ? _controller.pause()
-                          : _controller.play();
-                    });
-                  },
-                ),
-                IconButton(
-                  icon: const Icon(Icons.forward_10),
-                  onPressed: () {
-                    final newPosition = _controller.value.position + const Duration(seconds: 10);
-                    _controller.seekTo(newPosition);
-                  },
-                ),
-              ],
+                  IconButton(
+                    icon: Icon(
+                      _controller!.value.isPlaying ? Icons.pause : Icons.play_arrow,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _controller!.value.isPlaying
+                            ? _controller!.pause()
+                            : _controller!.play();
+                      });
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.forward_10),
+                    onPressed: () {
+                      final newPosition = _controller!.value.position + const Duration(seconds: 10);
+                      _controller!.seekTo(newPosition);
+                    },
+                  ),
+                ],
+              ),
             ),
-          ),
         ],
       ),
     );

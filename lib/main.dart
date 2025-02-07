@@ -95,7 +95,9 @@ class MyApp extends StatelessWidget {
               ),
               GoRoute(
                 path: '/video-result',
-                builder: (context, state) => const VideoResultScreen(),
+                builder: (context, state) => VideoResultScreen(
+                  taskId: state.extra as String,
+                ),
               ),
               GoRoute(
                 path: '/avatars',

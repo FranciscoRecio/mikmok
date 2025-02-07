@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:mikmok/providers/auth_provider.dart';
 import 'package:mikmok/providers/avatar_provider.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:mikmok/services/video_generation_service.dart';
 
 class CreateScreen extends StatefulWidget {
   const CreateScreen({super.key});
@@ -27,14 +28,38 @@ class _CreateScreenState extends State<CreateScreen> {
     super.dispose();
   }
 
-  void _handleSubmit() {
+  void _handleSubmit() async {
     if (_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Generating video...')),
-      );
-      
-      // Navigate to video result screen
-      context.push('/video-result');
+      try {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Generating video...')),
+        );
+
+        final avatars = await Provider.of<AvatarProvider>(context, listen: false)
+            .getUserAvatars(Provider.of<AuthProvider>(context, listen: false).user!.uid)
+            .first;
+        final selectedAvatar = avatars.firstWhere((avatar) => avatar.id == _selectedAvatarId);
+
+        if (_selectedAvatarId == null) {
+          throw Exception('Please select an avatar');
+        }
+
+        final videoService = VideoGenerationService();
+        final taskId = await videoService.generateVideo(
+          _promptController.text,
+          selectedAvatar.imageUrl,
+        );
+
+        if (!mounted) return;
+
+        // Navigate to video result screen with task ID
+        context.push('/video-result', extra: taskId);
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
     }
   }
 
