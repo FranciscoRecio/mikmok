@@ -95,7 +95,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 48), // Add padding at the top
+                  const SizedBox(height: 48),
                   Text(
                     'Email: ${_userProfile?.email ?? ""}',
                     style: Theme.of(context).textTheme.titleMedium,
@@ -123,6 +123,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       child: _isLoading
                           ? const CircularProgressIndicator()
                           : const Text('Update Profile'),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                        await authProvider.signOut();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                      ),
+                      child: const Text('Logout'),
                     ),
                   ),
                 ],
