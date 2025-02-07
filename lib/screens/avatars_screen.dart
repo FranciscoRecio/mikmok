@@ -250,17 +250,26 @@ class _AvatarsScreenState extends State<AvatarsScreen> {
                                 child: const Text('Cancel'),
                               ),
                               TextButton(
-                                onPressed: () {
+                                onPressed: () async {
                                   if (userId != null) {
-                                    Provider.of<AvatarProvider>(context, listen: false).createAvatar(
-                                      userId,
-                                      avatarName.isNotEmpty ? avatarName : name,
-                                      {'image_url': imageUrl},
-                                    );
-                                    Navigator.pop(context);
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('Avatar saved!')),
-                                    );
+                                    try {
+                                      await Provider.of<AvatarProvider>(context, listen: false)
+                                          .saveSampleAvatar(
+                                            userId,
+                                            avatarName.isNotEmpty ? avatarName : name,
+                                            imageUrl,
+                                          );
+                                      if (!mounted) return;
+                                      Navigator.pop(context);
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('Avatar saved successfully!')),
+                                      );
+                                    } catch (e) {
+                                      if (!mounted) return;
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text('Error saving avatar: $e')),
+                                      );
+                                    }
                                   }
                                 },
                                 child: const Text('Save'),
