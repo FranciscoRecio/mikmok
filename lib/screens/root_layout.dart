@@ -25,7 +25,7 @@ class _RootLayoutState extends State<RootLayout> {
         context.go('/home');
         break;
       case 1:
-        context.go('/discover');
+        context.go('/videos');
         break;
       case 2:
         context.go('/create');
@@ -60,8 +60,8 @@ class _RootLayoutState extends State<RootLayout> {
                 label: 'Home',
               ),
               const BottomNavigationBarItem(
-                icon: Icon(Icons.search),
-                label: 'Discover',
+                icon: Icon(Icons.video_library),
+                label: 'My Videos',
               ),
               BottomNavigationBarItem(
                 icon: Container(

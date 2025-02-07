@@ -8,7 +8,7 @@ import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/root_layout.dart';
-import 'screens/discover_screen.dart';
+import 'screens/videos_screen.dart';
 import 'screens/create_screen.dart';
 import 'screens/video_result_screen.dart';
 import 'screens/avatars_screen.dart';
@@ -73,10 +73,10 @@ class MyApp extends StatelessWidget {
                 ),
               ),
               GoRoute(
-                path: '/discover',
+                path: '/videos',
                 builder: (context, state) => const RootLayout(
                   selectedIndex: 1,
-                  child: DiscoverScreen(),
+                  child: VideosScreen(),
                 ),
               ),
               GoRoute(
