@@ -180,6 +180,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
           return _VideoPlayerWidget(
             controller: controller,
             showControls: _showControls,
+            title: widget.videos[index]['title'] as String? ?? '',
             onTap: () {
               setState(() {
                 _showControls = true;
@@ -200,11 +201,13 @@ class _VideoPlayerWidget extends StatelessWidget {
   final CachedVideoPlayerPlusController controller;
   final bool showControls;
   final VoidCallback onTap;
+  final String title;
 
   const _VideoPlayerWidget({
     required this.controller,
     required this.showControls,
     required this.onTap,
+    required this.title,
   });
 
   @override
@@ -228,6 +231,32 @@ class _VideoPlayerWidget extends StatelessWidget {
                 color: Colors.white,
               ),
             ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                  colors: [
+                    Colors.black.withOpacity(0.7),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+              child: Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
