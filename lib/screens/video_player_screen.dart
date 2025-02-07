@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:video_player/video_player.dart';
+import 'package:cached_video_player_plus/cached_video_player_plus.dart';
 import 'dart:async';
 
 class VideoPlayerScreen extends StatefulWidget {
@@ -18,7 +18,7 @@ class VideoPlayerScreen extends StatefulWidget {
 
 class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   late PageController _pageController;
-  final List<VideoPlayerController?> _controllers = List.filled(3, null);
+  final List<CachedVideoPlayerPlusController?> _controllers = List.filled(3, null);
   int _currentIndex = 0;
   bool _showControls = true;
   Timer? _hideTimer;
@@ -51,15 +51,20 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       await _controllers[position]!.dispose();
     }
 
-    final controller = VideoPlayerController.networkUrl(
+    final controller = CachedVideoPlayerPlusController.networkUrl(
       Uri.parse(video['video_url'] as String),
+      invalidateCacheIfOlderThan: const Duration(days: 1), // Cache for 1 day
     );
     _controllers[position] = controller;
 
-    await controller.initialize();
-    if (position == 1) { // Current video
-      controller.play();
-      _startHideTimer();
+    try {
+      await controller.initialize();
+      if (position == 1) { // Current video
+        controller.play();
+        _startHideTimer();
+      }
+    } catch (e) {
+      print('Error initializing video: $e');
     }
   }
 
@@ -158,7 +163,18 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
           final controller = _controllers[controllerIndex];
 
           if (controller == null || !controller.value.isInitialized) {
-            return const Center(child: CircularProgressIndicator());
+            return Stack(
+              children: [
+                if (index == _currentIndex)
+                  Image.network(
+                    widget.videos[index]['thumbnail_url'] as String,
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    height: double.infinity,
+                  ),
+                const Center(child: CircularProgressIndicator()),
+              ],
+            );
           }
 
           return _VideoPlayerWidget(
@@ -181,7 +197,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
 }
 
 class _VideoPlayerWidget extends StatelessWidget {
-  final VideoPlayerController controller;
+  final CachedVideoPlayerPlusController controller;
   final bool showControls;
   final VoidCallback onTap;
 
@@ -198,13 +214,20 @@ class _VideoPlayerWidget extends StatelessWidget {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          AspectRatio(
-            aspectRatio: controller.value.aspectRatio,
-            child: VideoPlayer(controller),
-          ),
-          if (showControls) ...[
-            // Your existing controls UI here
-          ],
+          CachedVideoPlayerPlus(controller),
+          if (showControls)
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.black26,
+                shape: BoxShape.circle,
+              ),
+              padding: const EdgeInsets.all(12),
+              child: Icon(
+                controller.value.isPlaying ? Icons.pause : Icons.play_arrow,
+                size: 64.0,
+                color: Colors.white,
+              ),
+            ),
         ],
       ),
     );
