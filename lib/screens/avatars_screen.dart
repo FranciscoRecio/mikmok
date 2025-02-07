@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/avatar_provider.dart';
 import '../models/avatar.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class AvatarsScreen extends StatefulWidget {
   const AvatarsScreen({super.key});
@@ -59,6 +60,7 @@ class _AvatarsScreenState extends State<AvatarsScreen> {
               stream: Provider.of<AvatarProvider>(context).getUserAvatars(userId),
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
+                  print('Stream error: ${snapshot.error}');
                   return Center(child: Text('Error: ${snapshot.error}'));
                 }
 
@@ -95,87 +97,84 @@ class _AvatarsScreenState extends State<AvatarsScreen> {
                   itemCount: avatars.length,
                   itemBuilder: (context, index) {
                     final avatar = avatars[index];
-                    return GestureDetector(
-                      onTap: () {
-                        context.push('/avatar-customization', extra: avatar);
-                      },
-                      onLongPress: () {
-                        // Show delete confirmation
-                        showDialog(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text('Delete Avatar'),
-                            content: Text('Are you sure you want to delete ${avatar.name}?'),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: const Text('Cancel'),
-                              ),
-                              TextButton(
-                                onPressed: () {
-                                  final scaffoldMessenger = ScaffoldMessenger.of(context);
-                                  final avatarProvider = Provider.of<AvatarProvider>(context, listen: false);
-                                  
-                                  avatarProvider.deleteAvatar(avatar.id);
-                                  Navigator.pop(context);
-                                  
-                                  scaffoldMessenger.showSnackBar(
-                                    SnackBar(
-                                      content: const Text('Avatar deleted'),
-                                      action: SnackBarAction(
-                                        label: 'Undo',
-                                        onPressed: () {
-                                          avatarProvider.undoDelete().then((_) {
-                                            scaffoldMessenger.showSnackBar(
-                                              const SnackBar(
-                                                content: Text('Avatar restored'),
-                                              ),
-                                            );
-                                          });
-                                        },
-                                      ),
-                                    ),
-                                  );
-                                },
-                                style: TextButton.styleFrom(
-                                  foregroundColor: Colors.red,
+                    print('Avatar URL: ${avatar.imageUrl}');
+
+                    return Card(
+                      child: InkWell(
+                        onTap: () {
+                          context.push('/avatar-customization', extra: avatar);
+                        },
+                        onLongPress: () {
+                          // Show delete confirmation
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Delete Avatar'),
+                              content: Text('Are you sure you want to delete ${avatar.name}?'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('Cancel'),
                                 ),
-                                child: const Text('Delete'),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.grey[200],
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                                TextButton(
+                                  onPressed: () {
+                                    final scaffoldMessenger = ScaffoldMessenger.of(context);
+                                    final avatarProvider = Provider.of<AvatarProvider>(context, listen: false);
+                                    
+                                    avatarProvider.deleteAvatar(avatar.id);
+                                    Navigator.pop(context);
+                                    
+                                    scaffoldMessenger.showSnackBar(
+                                      SnackBar(
+                                        content: const Text('Avatar deleted'),
+                                        action: SnackBarAction(
+                                          label: 'Undo',
+                                          onPressed: () {
+                                            avatarProvider.undoDelete().then((_) {
+                                              scaffoldMessenger.showSnackBar(
+                                                const SnackBar(
+                                                  content: Text('Avatar restored'),
+                                                ),
+                                              );
+                                            });
+                                          },
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: Colors.red,
+                                  ),
+                                  child: const Text('Delete'),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Container(
-                              width: 80,
-                              height: 80,
-                              decoration: const BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
+                            if (avatar.imageUrl.isNotEmpty) ...[
+                              SizedBox(
+                                width: 80,
+                                height: 80,
+                                child: SvgPicture.network(
+                                  avatar.imageUrl,
+                                  placeholderBuilder: (context) => const Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                ),
                               ),
-                              child: Icon(
-                                Icons.face,
-                                size: 50,
-                                color: avatar.customization['color'] != null
-                                    ? Color(avatar.customization['color'])
-                                    : Colors.blue,
+                            ] else
+                              const Icon(
+                                Icons.account_circle,
+                                size: 80,
+                                color: Colors.grey,
                               ),
-                            ),
                             const SizedBox(height: 8),
                             Text(
                               avatar.name,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                              ),
+                              style: Theme.of(context).textTheme.titleMedium,
                             ),
                           ],
                         ),

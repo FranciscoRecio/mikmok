@@ -4,37 +4,35 @@ class Avatar {
   final String id;
   final String userId;
   final String name;
+  final String imageUrl;
   final Map<String, dynamic> customization;
   final DateTime createdAt;
-  final DateTime updatedAt;
 
   Avatar({
     required this.id,
     required this.userId,
     required this.name,
+    required this.imageUrl,
     required this.customization,
     required this.createdAt,
-    required this.updatedAt,
   });
 
-  Map<String, dynamic> toMap() {
-    return {
-      'userId': userId,
-      'name': name,
-      'customization': customization,
-      'createdAt': createdAt,
-      'updatedAt': updatedAt,
-    };
-  }
+  Map<String, dynamic> toMap() => {
+    'userId': userId,
+    'name': name,
+    'imageUrl': imageUrl,
+    'customization': customization,
+    'createdAt': Timestamp.fromDate(createdAt),
+  };
 
   factory Avatar.fromMap(String id, Map<String, dynamic> map) {
     return Avatar(
       id: id,
-      userId: map['userId'] ?? '',
-      name: map['name'] ?? '',
-      customization: map['customization'] ?? {},
-      createdAt: (map['createdAt'] as Timestamp).toDate(),
-      updatedAt: (map['updatedAt'] as Timestamp).toDate(),
+      userId: map['userId'] as String,
+      name: map['name'] as String,
+      imageUrl: map['imageUrl'] as String? ?? '',
+      customization: map['customization'] as Map<String, dynamic>? ?? {},
+      createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }
 } 

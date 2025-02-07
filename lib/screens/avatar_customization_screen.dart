@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/avatar_provider.dart';
 import '../models/avatar.dart';
+import '../services/avatar_generation_service.dart';
+import '../widgets/avatar_generation_loading.dart';
 
 class AvatarCustomizationScreen extends StatefulWidget {
   final Avatar? avatar; // Add this to support editing existing avatars
@@ -17,6 +19,7 @@ class _AvatarCustomizationScreenState extends State<AvatarCustomizationScreen> {
   Color _selectedColor = Colors.blue;
   final _nameController = TextEditingController();
   bool _isSaving = false;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -90,13 +93,75 @@ class _AvatarCustomizationScreenState extends State<AvatarCustomizationScreen> {
     }
   }
 
+  Future<void> _generateAvatar() async {
+    setState(() => _isLoading = true);
+    
+    try {
+      print('Starting avatar generation...'); // Debug
+      final avatarService = AvatarGenerationService();
+      
+      final taskId = await avatarService.generateAvatar(
+        _nameController.text.isEmpty ? 'My Avatar' : _nameController.text,
+        {}, // style params
+      );
+      
+      print('Got task ID: $taskId'); // Debug
+
+      if (!mounted) return;
+
+      final result = await showDialog<String>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AvatarGenerationLoading(
+          taskId: taskId,
+          onComplete: (imageUrl) {
+            Navigator.of(context).pop(imageUrl);
+          },
+        ),
+      );
+
+      if (!mounted) return;
+      
+      if (result != null) {
+        final userId = Provider.of<AuthProvider>(context, listen: false).user?.uid;
+        if (userId == null) {
+          throw Exception('User not logged in');
+        }
+
+        await Provider.of<AvatarProvider>(context, listen: false).createAvatar(
+          userId,
+          _nameController.text.isEmpty ? 'My Avatar' : _nameController.text,
+          {'imageUrl': result},
+        );
+
+        if (!mounted) return;
+        
+        Navigator.pop(context); // Return to avatars screen
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Avatar created successfully!')),
+        );
+      }
+    } catch (e) {
+      print('Error in avatar generation: $e'); // Debug
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.avatar != null ? 'Edit Avatar' : 'Create Avatar'),
         actions: [
-          if (widget.avatar != null) // Only show delete for existing avatars
+          if (widget.avatar != null)
             IconButton(
               icon: const Icon(Icons.delete),
               onPressed: () {
@@ -157,19 +222,20 @@ class _AvatarCustomizationScreenState extends State<AvatarCustomizationScreen> {
                 );
               },
             ),
-          TextButton(
-            onPressed: _isSaving ? null : _saveAvatar,
-            child: _isSaving
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
-                : const Text('Save'),
-          ),
+          if (widget.avatar != null)
+            TextButton(
+              onPressed: _isSaving ? null : _saveAvatar,
+              child: _isSaving
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : const Text('Save'),
+            ),
         ],
       ),
       body: Column(
@@ -256,6 +322,14 @@ class _AvatarCustomizationScreenState extends State<AvatarCustomizationScreen> {
               ),
             ),
           ),
+          const SizedBox(height: 16),
+          if (widget.avatar == null)
+            ElevatedButton(
+              onPressed: _isLoading ? null : _generateAvatar,
+              child: _isLoading
+                  ? const CircularProgressIndicator()
+                  : const Text('Generate Avatar'),
+            ),
         ],
       ),
     );

@@ -18,18 +18,16 @@ class AvatarProvider extends ChangeNotifier {
     return _avatarService.getUserAvatars(userId);
   }
 
-  Future<void> createAvatar(String userId, String name, Map<String, dynamic> customization) async {
+  Future<void> createAvatar(
+    String userId, 
+    String name, 
+    Map<String, dynamic> customization,
+  ) async {
     try {
-      _isLoading = true;
-      _error = null;
-      notifyListeners();
-
       await _avatarService.createAvatar(userId, name, customization);
     } catch (e) {
-      _error = e.toString();
-    } finally {
-      _isLoading = false;
-      notifyListeners();
+      print('Error creating avatar: $e');
+      rethrow;
     }
   }
 
