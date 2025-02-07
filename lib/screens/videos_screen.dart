@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../screens/video_player_screen.dart';
+import '../screens/video_edit_screen.dart';
 
 class VideosScreen extends StatelessWidget {
   const VideosScreen({super.key});
@@ -141,7 +142,23 @@ class VideosScreen extends StatelessWidget {
                             // TODO: Implement pin functionality
                             break;
                           case 'edit':
-                            // TODO: Implement edit functionality
+                            final videoId = videos[index].id;
+                            final videoData = videos[index].data() as Map<String, dynamic>;
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => VideoEditScreen(
+                                  videoId: videoId,
+                                  videoData: videoData,
+                                ),
+                              ),
+                            ).then((updated) {
+                              if (updated == true) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Video updated successfully')),
+                                );
+                              }
+                            });
                             break;
                           case 'delete':
                             // TODO: Show delete confirmation dialog
