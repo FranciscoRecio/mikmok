@@ -19,18 +19,15 @@ class AvatarService {
   }
 
   // Create a new avatar
-  Future<void> createAvatar(
+  Future<DocumentReference> createAvatar(
     String userId, 
     String name, 
     Map<String, dynamic> customization,
   ) async {
-    // Extract imageUrl from customization if it exists
-    final String imageUrl = customization['imageUrl']?.toString() ?? '';
-    
-    await _firestore.collection('avatars').add({
+    return _firestore.collection('avatars').add({
       'userId': userId,
       'name': name,
-      'imageUrl': imageUrl,  // Store it at the top level
+      'imageUrl': '',
       'customization': customization,
       'createdAt': FieldValue.serverTimestamp(),
     });
@@ -61,6 +58,12 @@ class AvatarService {
     await _firestore.collection('avatars').doc(avatarId).set({
       ...data,
       'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<void> updateAvatarUrl(String avatarId, String imageUrl) async {
+    await _firestore.collection('avatars').doc(avatarId).update({
+      'imageUrl': imageUrl,
     });
   }
 } 

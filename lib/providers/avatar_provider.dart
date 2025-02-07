@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../models/avatar.dart';
 import '../services/avatar_service.dart';
+import '../services/storage_service.dart';
 
 class AvatarProvider extends ChangeNotifier {
   final AvatarService _avatarService = AvatarService();
@@ -24,7 +25,21 @@ class AvatarProvider extends ChangeNotifier {
     Map<String, dynamic> customization,
   ) async {
     try {
-      await _avatarService.createAvatar(userId, name, customization);
+      // First create the avatar document to get an ID
+      final docRef = await _avatarService.createAvatar(userId, name, customization);
+      
+      // Get the source URL from the API response
+      final sourceUrl = customization['imageUrl'] as String;
+      
+      // Store in Firebase Storage and get new URL
+      final storageUrl = await StorageService().storeAvatarFromUrl(
+        userId,
+        docRef.id,
+        sourceUrl,
+      );
+      
+      // Update the avatar document with the storage URL
+      await _avatarService.updateAvatarUrl(docRef.id, storageUrl);
     } catch (e) {
       print('Error creating avatar: $e');
       rethrow;
