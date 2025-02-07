@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
+import 'dart:async';
 
 class VideoPlayerScreen extends StatefulWidget {
   final String videoUrl;
@@ -18,6 +19,8 @@ class VideoPlayerScreen extends StatefulWidget {
 class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   late VideoPlayerController _controller;
   bool _isInitialized = false;
+  bool _showControls = true;
+  Timer? _hideTimer;
 
   @override
   void initState() {
@@ -28,11 +31,24 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
           _isInitialized = true;
         });
         _controller.play();
+        _startHideTimer();
       });
+  }
+
+  void _startHideTimer() {
+    _hideTimer?.cancel();
+    _hideTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted) {
+        setState(() {
+          _showControls = false;
+        });
+      }
+    });
   }
 
   @override
   void dispose() {
+    _hideTimer?.cancel();
     _controller.dispose();
     super.dispose();
   }
@@ -54,20 +70,31 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                     GestureDetector(
                       onTap: () {
                         setState(() {
+                          _showControls = true;
                           _controller.value.isPlaying
                               ? _controller.pause()
                               : _controller.play();
                         });
+                        _startHideTimer();
                       },
                       child: Container(
                         color: Colors.transparent,
-                        child: Center(
-                          child: Icon(
-                            _controller.value.isPlaying
-                                ? Icons.pause
-                                : Icons.play_arrow,
-                            size: 64.0,
-                            color: Colors.white.withOpacity(0.7),
+                        child: AnimatedOpacity(
+                          opacity: _showControls ? 1.0 : 0.0,
+                          duration: const Duration(milliseconds: 300),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.black26,
+                              shape: BoxShape.circle,
+                            ),
+                            padding: const EdgeInsets.all(12),
+                            child: Icon(
+                              _controller.value.isPlaying
+                                  ? Icons.pause
+                                  : Icons.play_arrow,
+                              size: 64.0,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ),
