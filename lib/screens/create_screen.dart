@@ -28,6 +28,7 @@ class _CreateScreenState extends State<CreateScreen> {
     _promptController.dispose();
     _contextController.dispose();
     _scriptController.dispose();
+    _avatarImageBytes.clear(); // Clear cached images
     super.dispose();
   }
 
@@ -77,12 +78,16 @@ class _CreateScreenState extends State<CreateScreen> {
 
   // Add this method to load and cache image bytes
   Future<void> _loadAvatarImage(String avatarId, String imageUrl) async {
+    if (!mounted) return; // Check if widget is mounted before starting
+
     try {
       final response = await http.get(Uri.parse(imageUrl));
       if (response.statusCode == 200) {
-        setState(() {
-          _avatarImageBytes[avatarId] = response.bodyBytes;
-        });
+        if (mounted) { // Check again before setState
+          setState(() {
+            _avatarImageBytes[avatarId] = response.bodyBytes;
+          });
+        }
       }
     } catch (e) {
       print('Error loading avatar image: $e');

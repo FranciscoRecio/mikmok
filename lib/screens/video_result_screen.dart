@@ -73,62 +73,64 @@ class _VideoResultScreenState extends State<VideoResultScreen> {
       appBar: AppBar(
         title: const Text('Generated Video'),
       ),
-      body: Column(
-        children: [
-          if (_isInitialized && _controller != null)
-            AspectRatio(
-              aspectRatio: _controller!.value.aspectRatio,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  VideoPlayer(_controller!),
-                  _PlayPauseOverlay(controller: _controller!),
-                ],
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            if (_isInitialized && _controller != null)
+              AspectRatio(
+                aspectRatio: _controller!.value.aspectRatio,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    VideoPlayer(_controller!),
+                    _PlayPauseOverlay(controller: _controller!),
+                  ],
+                ),
+              )
+            else
+              const Center(
+                child: CircularProgressIndicator(),
               ),
-            )
-          else
-            const Center(
-              child: CircularProgressIndicator(),
-            ),
-          const SizedBox(height: 16),
-          if (_controller != null)
-            _VideoProgressIndicator(controller: _controller!),
-          if (_controller != null)
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.replay_10),
-                    onPressed: () {
-                      final newPosition = _controller!.value.position - const Duration(seconds: 10);
-                      _controller!.seekTo(newPosition);
-                    },
-                  ),
-                  IconButton(
-                    icon: Icon(
-                      _controller!.value.isPlaying ? Icons.pause : Icons.play_arrow,
+            const SizedBox(height: 16),
+            if (_controller != null)
+              _VideoProgressIndicator(controller: _controller!),
+            if (_controller != null)
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.replay_10),
+                      onPressed: () {
+                        final newPosition = _controller!.value.position - const Duration(seconds: 10);
+                        _controller!.seekTo(newPosition);
+                      },
                     ),
-                    onPressed: () {
-                      setState(() {
-                        _controller!.value.isPlaying
-                            ? _controller!.pause()
-                            : _controller!.play();
-                      });
-                    },
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.forward_10),
-                    onPressed: () {
-                      final newPosition = _controller!.value.position + const Duration(seconds: 10);
-                      _controller!.seekTo(newPosition);
-                    },
-                  ),
-                ],
+                    IconButton(
+                      icon: Icon(
+                        _controller!.value.isPlaying ? Icons.pause : Icons.play_arrow,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _controller!.value.isPlaying
+                              ? _controller!.pause()
+                              : _controller!.play();
+                        });
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.forward_10),
+                      onPressed: () {
+                        final newPosition = _controller!.value.position + const Duration(seconds: 10);
+                        _controller!.seekTo(newPosition);
+                      },
+                    ),
+                  ],
+                ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
