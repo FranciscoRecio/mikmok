@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'package:mikmok/providers/auth_provider.dart';
+import 'package:mikmok/providers/avatar_provider.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class CreateScreen extends StatefulWidget {
   const CreateScreen({super.key});
@@ -13,6 +17,7 @@ class _CreateScreenState extends State<CreateScreen> {
   final _promptController = TextEditingController();
   final _contextController = TextEditingController();
   final _scriptController = TextEditingController();
+  String? _selectedAvatarId;
 
   @override
   void dispose() {
@@ -35,6 +40,8 @@ class _CreateScreenState extends State<CreateScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final userId = Provider.of<AuthProvider>(context).user?.uid;
+
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -47,6 +54,57 @@ class _CreateScreenState extends State<CreateScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: 16),
+                    StreamBuilder(
+                      stream: Provider.of<AvatarProvider>(context).getUserAvatars(userId ?? ''),
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData) {
+                          return const SizedBox.shrink();
+                        }
+
+                        final avatars = snapshot.data!;
+                        // Set initial value to most recent avatar if not already selected
+                        if (_selectedAvatarId == null && avatars.isNotEmpty) {
+                          _selectedAvatarId = avatars.first.id;
+                        }
+                        return Row(
+                          children: [
+                            Expanded(
+                              child: DropdownButtonFormField<String>(
+                                decoration: const InputDecoration(
+                                  labelText: 'Select Avatar',
+                                  border: OutlineInputBorder(),
+                                ),
+                                value: _selectedAvatarId,
+                                items: [
+                                  const DropdownMenuItem(
+                                    value: null,
+                                    child: Text('No Avatar'),
+                                  ),
+                                  ...avatars.map((avatar) => DropdownMenuItem(
+                                    value: avatar.id,
+                                    child: Text(avatar.name),
+                                  )),
+                                ],
+                                onChanged: (value) {
+                                  setState(() => _selectedAvatarId = value);
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            if (_selectedAvatarId != null)
+                              SizedBox(
+                                width: 60,
+                                height: 60,
+                                child: SvgPicture.network(
+                                  avatars.firstWhere((a) => a.id == _selectedAvatarId).imageUrl,
+                                  placeholderBuilder: (context) => const CircularProgressIndicator(color: Colors.green),
+                                ),
+                              ),
+                          ],
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 24),
                     TextFormField(
                       controller: _promptController,
                       decoration: const InputDecoration(
