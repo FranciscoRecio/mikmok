@@ -83,4 +83,42 @@ class VideoGenerationService {
       }
     }
   }
+
+  Future<String> generateSceneToVideo({
+    required String prompt,
+    required String userId,
+    required String startImageUrl,
+    String? endImageUrl,
+  }) async {
+    try {
+      // Create form data
+      final formData = {
+        'prompt': prompt,
+        'user_id': userId,
+        'start_image_url': startImageUrl,
+      };
+
+      // Add end_image_url if provided
+      if (endImageUrl != null) {
+        formData['end_image_url'] = endImageUrl;
+      }
+
+      // Make request
+      final response = await http.post(
+        Uri.parse('$baseUrl/generate/scene-to-video/'),
+        headers: {'accept': 'application/json'},
+        body: formData,
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to generate video: ${response.statusCode}');
+      }
+
+      final data = json.decode(response.body);
+      return data['task_id'];
+    } catch (e) {
+      print('Error generating video: $e');
+      rethrow;
+    }
+  }
 } 
