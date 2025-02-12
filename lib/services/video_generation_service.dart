@@ -5,9 +5,11 @@ import 'package:video_compress/video_compress.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class VideoGenerationService {
   final String baseUrl = 'http://3.128.202.79:8000';
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
 
   Future<String> generateVideo(String text, List<int> imageBytes, String userId) async {
@@ -118,6 +120,46 @@ class VideoGenerationService {
       return data['task_id'];
     } catch (e) {
       print('Error generating video: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> deleteVideo(String videoId) async {
+    try {
+      // Get video data first to get the URLs
+      final videoDoc = await _firestore.collection('videos').doc(videoId).get();
+      final videoData = videoDoc.data();
+      
+      if (videoData != null) {
+        // Delete video file from Storage
+        final videoUrl = videoData['video_url'] as String;
+        final videoRef = FirebaseStorage.instance.refFromURL(videoUrl);
+        await videoRef.delete();
+
+        // Delete thumbnail if exists
+        final thumbnailUrl = videoData['thumbnail_url'] as String;
+        final thumbnailRef = FirebaseStorage.instance.refFromURL(thumbnailUrl);
+        await thumbnailRef.delete();
+
+        // Delete Firestore document
+        await _firestore.collection('videos').doc(videoId).delete();
+      }
+    } catch (e) {
+      print('Error deleting video: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> updateVideo(String videoId, {String? name}) async {
+    try {
+      final updates = <String, dynamic>{
+        if (name != null) 'name': name,
+        'updated_at': FieldValue.serverTimestamp(),
+      };
+
+      await _firestore.collection('videos').doc(videoId).update(updates);
+    } catch (e) {
+      print('Error updating video: $e');
       rethrow;
     }
   }

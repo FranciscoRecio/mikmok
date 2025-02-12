@@ -22,6 +22,7 @@ class _CreateSceneScreenState extends State<CreateSceneScreen> {
   bool _isLoading = false;
   bool _extendScene = false;
   String? _selectedSceneId;
+  String? _selectedSceneUrl;
 
   @override
   void dispose() {
@@ -35,17 +36,13 @@ class _CreateSceneScreenState extends State<CreateSceneScreen> {
 
       try {
         final sceneProvider = Provider.of<SceneProvider>(context, listen: false);
-        final scenes = await sceneProvider
-            .getUserScenesForPersona(widget.persona.userId, widget.persona.id)
-            .first;
-        final selectedScene = scenes.firstWhere((s) => s.id == _selectedSceneId);
         
         final taskId = _extendScene && _selectedSceneId != null
             ? await sceneProvider.startSceneToSceneGeneration(
                 prompt: _promptController.text,
                 userId: widget.persona.userId,
                 personaId: widget.persona.id,
-                sceneUrl: selectedScene.imageUrl,
+                sceneUrl: _selectedSceneUrl!,
               )
             : await sceneProvider.startGeneration(
                 prompt: _promptController.text,
@@ -166,6 +163,7 @@ class _CreateSceneScreenState extends State<CreateSceneScreen> {
                     _extendScene = value;
                     if (!value) {
                       _selectedSceneId = null;
+                      _selectedSceneUrl = null;
                     }
                   });
                 },
@@ -204,6 +202,7 @@ class _CreateSceneScreenState extends State<CreateSceneScreen> {
                             onTap: () {
                               setState(() {
                                 _selectedSceneId = scene.id;
+                                _selectedSceneUrl = scene.imageUrl;
                               });
                             },
                             child: Card(

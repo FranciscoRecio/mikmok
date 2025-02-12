@@ -4,10 +4,16 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../screens/video_player_screen.dart';
 import '../screens/video_edit_screen.dart';
+import '../services/video_generation_service.dart';
 
-class VideosScreen extends StatelessWidget {
+class VideosScreen extends StatefulWidget {
   const VideosScreen({super.key});
 
+  @override
+  State<VideosScreen> createState() => _VideosScreenState();
+}
+
+class _VideosScreenState extends State<VideosScreen> {
   @override
   Widget build(BuildContext context) {
     final userId = Provider.of<AuthProvider>(context).user?.uid;
@@ -144,47 +150,11 @@ class VideosScreen extends StatelessWidget {
                           case 'edit':
                             final videoId = videos[index].id;
                             final videoData = videos[index].data() as Map<String, dynamic>;
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => VideoEditScreen(
-                                  videoId: videoId,
-                                  videoData: videoData,
-                                ),
-                              ),
-                            ).then((updated) {
-                              if (updated == true) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Video updated successfully')),
-                                );
-                              }
-                            });
+                            _showEditDialog(videoId, videoData['name'] as String);
                             break;
                           case 'delete':
-                            // TODO: Show delete confirmation dialog
-                            showDialog(
-                              context: context,
-                              builder: (context) => AlertDialog(
-                                title: const Text('Delete Video'),
-                                content: const Text('Are you sure you want to delete this video?'),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(context),
-                                    child: const Text('Cancel'),
-                                  ),
-                                  TextButton(
-                                    onPressed: () {
-                                      // TODO: Implement delete functionality
-                                      Navigator.pop(context);
-                                    },
-                                    child: const Text(
-                                      'Delete',
-                                      style: TextStyle(color: Colors.red),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
+                            final videoId = videos[index].id;
+                            _deleteVideo(videoId);
                             break;
                         }
                       },
@@ -229,5 +199,90 @@ class VideosScreen extends StatelessWidget {
         },
       ),
     );
+  }
+
+  Future<void> _deleteVideo(String videoId) async {
+    try {
+      await showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Delete Video'),
+          content: const Text('Are you sure you want to delete this video?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                final videoService = VideoGenerationService();
+                await videoService.deleteVideo(videoId);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Video deleted successfully')),
+                  );
+                }
+              },
+              child: const Text(
+                'Delete',
+                style: TextStyle(color: Colors.red),
+              ),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error deleting video: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _showEditDialog(String videoId, String currentName) async {
+    final nameController = TextEditingController(text: currentName);
+    
+    try {
+      final newName = await showDialog<String>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Edit Video'),
+          content: TextField(
+            controller: nameController,
+            decoration: const InputDecoration(
+              labelText: 'Video Name',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, nameController.text),
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      );
+
+      if (newName != null && newName != currentName) {
+        final videoService = VideoGenerationService();
+        await videoService.updateVideo(videoId, name: newName);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Video updated successfully')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error updating video: $e')),
+        );
+      }
+    }
   }
 } 
