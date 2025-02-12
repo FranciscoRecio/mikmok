@@ -1,23 +1,16 @@
 import 'package:flutter/foundation.dart';
 import '../models/avatar.dart';
 import '../services/avatar_service.dart';
-import '../services/avatar_generation_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'package:http/http.dart' as http;
 
 class AvatarProvider extends ChangeNotifier {
   final AvatarService _avatarService = AvatarService();
-  final AvatarGenerationService _avatarGenerationService = AvatarGenerationService();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseStorage _storage = FirebaseStorage.instance;
-  List<Avatar> _avatars = [];
   bool _isLoading = false;
   String? _error;
   Avatar? _lastDeletedAvatar;
   Map<String, dynamic>? _lastDeletedData;
 
-  List<Avatar> get avatars => _avatars;
   bool get isLoading => _isLoading;
   String? get error => _error;
 
@@ -25,37 +18,38 @@ class AvatarProvider extends ChangeNotifier {
     return _avatarService.getUserAvatars(userId);
   }
 
-  Future<void> createAvatar(String userId, String prompt, Map<String, dynamic> styleParams) async {
+  Future<void> generateAvatar(String userId, String text) async {
     try {
       _isLoading = true;
+      _error = null;
       notifyListeners();
 
-      final avatarService = AvatarGenerationService();
-      
-      // Generate avatar and get task ID
-      final taskId = await avatarService.generateAvatar(prompt, styleParams);
-      
-      // Wait for the final image URL
-      final imageUrl = await avatarService.waitForAvatar(taskId);
-      print('Got avatar URL: $imageUrl'); // Debug
+      final taskId = await _avatarService.startGeneration(userId, text);
+      await _pollGeneration(taskId);
 
-      // Save to Firestore
-      await _firestore.collection('avatars').add({
-        'userId': userId,
-        'prompt': prompt,
-        'imageUrl': imageUrl,
-        'name': prompt,
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-
-      _isLoading = false;
-      notifyListeners();
     } catch (e) {
-      _isLoading = false;
       _error = e.toString();
+    } finally {
+      _isLoading = false;
       notifyListeners();
-      print('Error creating avatar: $e');
-      rethrow;
+    }
+  }
+
+  Future<void> _pollGeneration(String taskId) async {
+    while (true) {
+      try {
+        final status = await _avatarService.checkGenerationStatus(taskId);
+        
+        if (status['status'] == 'COMPLETED') {
+          break;
+        } else if (status['status'] == 'FAILED') {
+          throw 'Avatar generation failed';
+        }
+        
+        await Future.delayed(const Duration(seconds: 2));
+      } catch (e) {
+        throw 'Error checking generation status: $e';
+      }
     }
   }
 
@@ -80,11 +74,10 @@ class AvatarProvider extends ChangeNotifier {
       _error = null;
       notifyListeners();
 
-      // Store the avatar data before deleting
-      final avatarDoc = await _avatarService.getAvatar(avatarId);
-      if (avatarDoc != null) {
-        _lastDeletedAvatar = Avatar.fromMap(avatarId, avatarDoc);
-        _lastDeletedData = avatarDoc;
+      final avatarData = await _avatarService.getAvatar(avatarId);
+      if (avatarData != null) {
+        _lastDeletedAvatar = Avatar.fromMap(avatarId, avatarData);
+        _lastDeletedData = avatarData;
       }
 
       await _avatarService.deleteAvatar(avatarId);
@@ -121,47 +114,32 @@ class AvatarProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> saveSampleAvatar(String userId, String name, String sampleImageUrl) async {
+  Future<void> saveSampleAvatar(String userId, String name, String imageUrl) async {
     try {
       _isLoading = true;
       _error = null;
       notifyListeners();
 
-      // Download the sample SVG content
-      final response = await http.get(Uri.parse(sampleImageUrl));
-      if (response.statusCode != 200) throw 'Failed to download sample avatar';
-
-      // Create a unique filename
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final filename = 'avatar_$timestamp.svg';
-      
-      // Upload to Firebase Storage in user's avatars directory
-      final storageRef = _storage.ref().child('avatars/$userId/$filename');
-      await storageRef.putData(
-        response.bodyBytes,
-        SettableMetadata(contentType: 'image/svg+xml'),
-      );
-
-      // Get the download URL for the uploaded file
-      final imageUrl = await storageRef.getDownloadURL();
-
-      // Save to Firestore
       await _firestore.collection('avatars').add({
-        'userId': userId,
+        'user_id': userId,
         'name': name,
-        'imageUrl': imageUrl,
-        'createdAt': FieldValue.serverTimestamp(),
-        'isSample': true,
+        'image_url': imageUrl,
+        'created_at': FieldValue.serverTimestamp(),
+        'metadata': {
+          'seed': 'Sample avatar',
+        },
       });
 
-      _isLoading = false;
-      notifyListeners();
     } catch (e) {
-      _isLoading = false;
       _error = e.toString();
-      notifyListeners();
-      print('Error saving sample avatar: $e');
       rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
+  }
+
+  Stream<List<Map<String, dynamic>>> getSampleAvatars() {
+    return _avatarService.getSampleAvatars();
   }
 } 
