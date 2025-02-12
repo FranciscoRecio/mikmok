@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/scene_provider.dart';
 import '../models/persona.dart';
+import '../models/scene.dart';
 
 class CreateSceneScreen extends StatefulWidget {
   final Persona persona;
@@ -19,6 +20,8 @@ class _CreateSceneScreenState extends State<CreateSceneScreen> {
   final _formKey = GlobalKey<FormState>();
   final _promptController = TextEditingController();
   bool _isLoading = false;
+  bool _extendScene = false;
+  String? _selectedSceneId;
 
   @override
   void dispose() {
@@ -141,12 +144,108 @@ class _CreateSceneScreenState extends State<CreateSceneScreen> {
                   return null;
                 },
               ),
-              const Spacer(),
+              const SizedBox(height: 16),
+              SwitchListTile(
+                title: const Text('Extend an existing scene'),
+                subtitle: const Text('Generate the final scene from the selected scene'),
+                value: _extendScene,
+                onChanged: (bool value) {
+                  setState(() {
+                    _extendScene = value;
+                    if (!value) {
+                      _selectedSceneId = null;
+                    }
+                  });
+                },
+              ),
+              if (_extendScene) ...[
+                const SizedBox(height: 16),
+                StreamBuilder<List<Scene>>(
+                  stream: Provider.of<SceneProvider>(context)
+                      .getUserScenesForPersona(widget.persona.userId, widget.persona.id),
+                  builder: (context, snapshot) {
+                    if (snapshot.hasError) {
+                      return Text('Error: ${snapshot.error}');
+                    }
+
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+
+                    final scenes = snapshot.data ?? [];
+
+                    if (scenes.isEmpty) {
+                      return const Text('No scenes available to extend');
+                    }
+
+                    return Expanded(
+                      child: GridView.builder(
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 16,
+                        ),
+                        itemCount: scenes.length,
+                        itemBuilder: (context, index) {
+                          final scene = scenes[index];
+                          return InkWell(
+                            onTap: () {
+                              setState(() {
+                                _selectedSceneId = scene.id;
+                              });
+                            },
+                            child: Card(
+                              color: _selectedSceneId == scene.id 
+                                  ? Theme.of(context).primaryColor.withOpacity(0.1)
+                                  : null,
+                              child: Padding(
+                                padding: const EdgeInsets.all(12.0),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    SizedBox(
+                                      width: 80,
+                                      height: 80,
+                                      child: Image.network(
+                                        scene.imageUrl,
+                                        loadingBuilder: (context, child, loadingProgress) {
+                                          if (loadingProgress == null) return child;
+                                          return const Center(
+                                            child: CircularProgressIndicator(),
+                                          );
+                                        },
+                                        errorBuilder: (context, error, stackTrace) {
+                                          return const Icon(Icons.error_outline, size: 40);
+                                        },
+                                        fit: BoxFit.contain,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      scene.name,
+                                      style: Theme.of(context).textTheme.titleMedium,
+                                      textAlign: TextAlign.center,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ],
               SizedBox(
                 width: double.infinity,
                 height: 48,
                 child: ElevatedButton(
-                  onPressed: _isLoading ? null : _handleSubmit,
+                  onPressed: _isLoading || (_extendScene && _selectedSceneId == null)
+                      ? null 
+                      : _handleSubmit,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Theme.of(context).primaryColor,
                     foregroundColor: Colors.white,
