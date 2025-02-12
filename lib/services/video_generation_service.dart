@@ -126,26 +126,12 @@ class VideoGenerationService {
 
   Future<void> deleteVideo(String videoId) async {
     try {
-      // Get video data first to get the URLs
-      final videoDoc = await _firestore.collection('videos').doc(videoId).get();
-      final videoData = videoDoc.data();
-      
-      if (videoData != null) {
-        // Delete video file from Storage
-        final videoUrl = videoData['video_url'] as String;
-        final videoRef = FirebaseStorage.instance.refFromURL(videoUrl);
-        await videoRef.delete();
-
-        // Delete thumbnail if exists
-        final thumbnailUrl = videoData['thumbnail_url'] as String;
-        final thumbnailRef = FirebaseStorage.instance.refFromURL(thumbnailUrl);
-        await thumbnailRef.delete();
-
-        // Delete Firestore document
-        await _firestore.collection('videos').doc(videoId).delete();
-      }
+      await _firestore.collection('videos').doc(videoId).update({
+        'user_id': 'archive',  // Mark as archived instead of deleting
+        'archived_at': FieldValue.serverTimestamp(),
+      });
     } catch (e) {
-      print('Error deleting video: $e');
+      print('Error archiving video: $e');
       rethrow;
     }
   }
