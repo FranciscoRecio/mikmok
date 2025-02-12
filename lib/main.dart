@@ -15,11 +15,13 @@ import 'screens/avatars_screen.dart';
 import 'screens/avatar_customization_screen.dart';
 import 'screens/models_screen.dart';
 import 'screens/scenes_screen.dart';
+import 'screens/create_scene_screen.dart';
 import 'providers/auth_provider.dart';
 import 'providers/avatar_provider.dart';
 import 'providers/persona_provider.dart';
 import 'models/avatar.dart';
 import 'providers/scene_provider.dart';
+import 'models/persona.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -116,6 +118,12 @@ class MyApp extends StatelessWidget {
                 path: '/avatar-customization',
                 builder: (context, state) => AvatarCustomizationScreen(
                   avatar: state.extra as Avatar?,
+                ),
+              ),
+              GoRoute(
+                path: '/create-scene',
+                builder: (context, state) => CreateSceneScreen(
+                  persona: state.extra as Persona,
                 ),
               ),
             ],

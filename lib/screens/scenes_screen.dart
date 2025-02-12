@@ -7,6 +7,7 @@ import '../models/persona.dart';
 import '../models/scene.dart';
 import '../providers/avatar_provider.dart';
 import '../models/avatar.dart';
+import '../screens/create_scene_screen.dart';
 
 class ScenesScreen extends StatefulWidget {
   const ScenesScreen({super.key});
@@ -47,6 +48,57 @@ class _ScenesScreenState extends State<ScenesScreen> {
                 _buildAvatarDropdown(userId),
                 const SizedBox(height: 16),
                 if (selectedAvatarId != null) _buildPersonaDropdown(userId),
+                if (selectedPersonaId != null) ...[
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        final personas = await Provider.of<PersonaProvider>(context, listen: false)
+                            .getUserPersonasForAvatar(userId, selectedAvatarId!)
+                            .first;
+                        final selectedPersona = personas.firstWhere(
+                          (p) => p.id == selectedPersonaId,
+                        );
+                        
+                        if (!mounted) return;
+                        
+                        final taskId = await Navigator.push<String>(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => CreateSceneScreen(
+                              persona: selectedPersona,
+                            ),
+                          ),
+                        );
+
+                        if (taskId != null && mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Started generating new scene...'),
+                            ),
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).primaryColor,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.add),
+                          SizedBox(width: 8),
+                          Text(
+                            'Add New Scene',
+                            style: TextStyle(fontSize: 16),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
