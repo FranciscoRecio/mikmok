@@ -16,6 +16,7 @@ import 'screens/avatar_customization_screen.dart';
 import 'screens/models_screen.dart';
 import 'screens/scenes_screen.dart';
 import 'screens/create_scene_screen.dart';
+import 'screens/personas_screen.dart';
 import 'providers/auth_provider.dart';
 import 'providers/avatar_provider.dart';
 import 'providers/persona_provider.dart';
@@ -95,10 +96,10 @@ class MyApp extends StatelessWidget {
                 ),
               ),
               GoRoute(
-                path: '/models',
+                path: '/personas',
                 builder: (context, state) => const RootLayout(
                   selectedIndex: 3,
-                  child: ModelsScreen(),
+                  child: PersonasScreen(),
                 ),
               ),
               GoRoute(

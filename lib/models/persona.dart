@@ -30,4 +30,17 @@ class Persona {
       metadata: data['metadata'] as Map<String, dynamic>,
     );
   }
+
+  factory Persona.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    return Persona(
+      id: doc.id,
+      userId: data['user_id'],
+      avatarId: data['avatar_id'],
+      name: data['name'],
+      imageUrl: data['image_url'],
+      createdAt: (data['created_at'] as Timestamp).toDate(),
+      metadata: data['metadata'] ?? {},
+    );
+  }
 } 

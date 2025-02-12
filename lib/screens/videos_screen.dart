@@ -215,13 +215,13 @@ class _VideosScreenState extends State<VideosScreen> {
             ),
             TextButton(
               onPressed: () async {
-                Navigator.pop(context);
                 final videoService = VideoGenerationService();
                 await videoService.deleteVideo(videoId);
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Video deleted successfully')),
                   );
+                  Navigator.pop(context);
                 }
               },
               child: const Text(

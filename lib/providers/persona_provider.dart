@@ -1,9 +1,11 @@
 import 'package:flutter/foundation.dart';
 import '../models/persona.dart';
 import '../services/persona_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class PersonaProvider extends ChangeNotifier {
   final PersonaService _personaService = PersonaService();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   bool _isLoading = false;
   String? _error;
   Persona? _lastDeletedPersona;
@@ -101,6 +103,30 @@ class PersonaProvider extends ChangeNotifier {
     } catch (e) {
       _error = e.toString();
       throw _error!;
+    }
+  }
+
+  Stream<List<Persona>> getUserPersonas(String userId) {
+    return _firestore
+        .collection('personas')
+        .where('user_id', isEqualTo: userId)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => Persona.fromFirestore(doc))
+            .toList());
+  }
+
+  Future<void> updatePersona(String personaId, {String? name}) async {
+    try {
+      final updates = <String, dynamic>{
+        if (name != null) 'name': name,
+        'updated_at': FieldValue.serverTimestamp(),
+      };
+
+      await _firestore.collection('personas').doc(personaId).update(updates);
+    } catch (e) {
+      print('Error updating persona: $e');
+      rethrow;
     }
   }
 } 
