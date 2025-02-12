@@ -64,4 +64,34 @@ class PersonaProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  Future<String> startGeneration({
+    required String name,
+    required String userId,
+    required String avatarId,
+    required String avatarUrl,
+    String? prompt,
+  }) async {
+    try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      final taskId = await _personaService.startGeneration(
+        name: name,
+        userId: userId,
+        avatarId: avatarId,
+        avatarUrl: avatarUrl,
+        prompt: prompt,
+      );
+
+      return taskId;
+    } catch (e) {
+      _error = e.toString();
+      throw _error!;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 } 

@@ -43,22 +43,6 @@ class _PersonasScreenState extends State<PersonasScreen> {
                 ),
                 const SizedBox(height: 16),
                 _buildAvatarDropdown(userId),
-                ElevatedButton(
-                  onPressed: () => context.push('/persona-customization'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).primaryColor,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.add),
-                      SizedBox(width: 8),
-                      Text('Create New Persona'),
-                    ],
-                  ),
-                ),
               ],
             ),
           ),
@@ -153,56 +137,105 @@ class _PersonasScreenState extends State<PersonasScreen> {
           orElse: () => avatars.first,
         );
 
-        return Row(
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Expanded(
-              child: DropdownButtonFormField<String>(
-                value: selectedAvatarId ?? avatars.first.id,
-                decoration: const InputDecoration(
-                  labelText: 'Select Avatar',
-                  border: OutlineInputBorder(),
+            Row(
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    value: selectedAvatarId ?? avatars.first.id,
+                    decoration: const InputDecoration(
+                      labelText: 'Select Avatar',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: avatars.map((avatar) {
+                      return DropdownMenuItem(
+                        value: avatar.id,
+                        child: Text(avatar.name),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        selectedAvatarId = value;
+                      });
+                    },
+                  ),
                 ),
-                items: avatars.map((avatar) {
-                  return DropdownMenuItem(
-                    value: avatar.id,
-                    child: Text(avatar.name),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    selectedAvatarId = value;
-                  });
-                },
-              ),
+                const SizedBox(width: 16),
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: Colors.grey[300]!,
+                      width: 1,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: selectedAvatar.imageUrl.isNotEmpty
+                        ? Image.network(
+                            selectedAvatar.imageUrl,
+                            fit: BoxFit.cover,
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return const Center(
+                                child: CircularProgressIndicator(),
+                              );
+                            },
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Icon(Icons.error_outline);
+                            },
+                          )
+                        : const Icon(Icons.account_circle, size: 40, color: Colors.grey),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 16),
-            Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: Colors.grey[300]!,
-                  width: 1,
-                ),
-                borderRadius: BorderRadius.circular(8),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: selectedAvatarId != null
+                  ? () => _startPersonaGeneration(
+                      context,
+                      userId,
+                      selectedAvatar,
+                    )
+                  : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).primaryColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: selectedAvatar.imageUrl.isNotEmpty
-                    ? Image.network(
-                        selectedAvatar.imageUrl,
-                        fit: BoxFit.cover,
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return const Center(
-                            child: CircularProgressIndicator(),
-                          );
-                        },
-                        errorBuilder: (context, error, stackTrace) {
-                          return const Icon(Icons.error_outline);
-                        },
-                      )
-                    : const Icon(Icons.account_circle, size: 40, color: Colors.grey),
+              child: Consumer<PersonaProvider>(
+                builder: (context, personaProvider, child) {
+                  if (personaProvider.isLoading) {
+                    return const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        ),
+                        SizedBox(width: 8),
+                        Text('Creating...'),
+                      ],
+                    );
+                  }
+                  return const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.add),
+                      SizedBox(width: 8),
+                      Text('Create New Persona'),
+                    ],
+                  );
+                },
               ),
             ),
           ],
@@ -211,52 +244,72 @@ class _PersonasScreenState extends State<PersonasScreen> {
     );
   }
 
+  Future<void> _startPersonaGeneration(
+    BuildContext context,
+    String userId,
+    Avatar avatar,
+  ) async {
+    try {
+      final personaProvider = Provider.of<PersonaProvider>(context, listen: false);
+      final taskId = await personaProvider.startGeneration(
+        name: '${avatar.name} Persona',
+        userId: userId,
+        avatarId: avatar.id,
+        avatarUrl: avatar.imageUrl,
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Started generating new persona...'),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   Widget _buildPersonaCard(Persona persona) {
     return Card(
-      child: InkWell(
-        onTap: () => context.push('/persona-customization', extra: persona),
-        child: Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              SizedBox(
-                width: 80,
-                height: 80,
-                child: Image.network(
-                  persona.imageUrl,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return const Center(
-                      child: CircularProgressIndicator(),
-                    );
-                  },
-                  errorBuilder: (context, error, stackTrace) {
-                    return const Icon(Icons.error_outline, size: 40);
-                  },
-                  fit: BoxFit.contain,
-                ),
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: 80,
+              height: 80,
+              child: Image.network(
+                persona.imageUrl,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return const Center(
+                    child: CircularProgressIndicator(),
+                  );
+                },
+                errorBuilder: (context, error, stackTrace) {
+                  return const Icon(Icons.error_outline, size: 40);
+                },
+                fit: BoxFit.contain,
               ),
-              const SizedBox(height: 8),
-              Text(
-                persona.name,
-                style: Theme.of(context).textTheme.titleMedium,
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                persona.metadata['prompt'] as String? ?? 'No prompt',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.grey[600],
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              persona.name,
+              style: Theme.of(context).textTheme.titleMedium,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
         ),
       ),
     );

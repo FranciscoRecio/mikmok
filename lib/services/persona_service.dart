@@ -40,20 +40,30 @@ class PersonaService {
     required String avatarUrl,
     String? prompt,
   }) async {
+    final formData = {
+      'name': name,
+      'user_id': userId,
+      'avatar_id': avatarId,
+      'avatar_url': avatarUrl,
+      if (prompt != null) 'prompt': prompt,
+    };
+
+    print('Starting persona generation with form data:');
+    print(formData);
+
     final response = await http.post(
-      Uri.parse('$_baseUrl/generate/persona/'),
+      Uri.parse('$_baseUrl/generate/avatar-to-persona/'),
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
         'Accept': 'application/json',
       },
-      body: {
-        'name': name,
-        'user_id': userId,
-        'avatar_id': avatarId,
-        'avatar_url': avatarUrl,
-        if (prompt != null) 'prompt': prompt,
-      },
+      body: formData,  // Send as form data instead of JSON
     );
+
+    print('Request URL: ${Uri.parse('$_baseUrl/generate/avatar-to-persona/')}');
+    print('Request headers:');
+    print(response.request?.headers);
+    print('Response status: ${response.statusCode}');
+    print('Response body: ${response.body}');
 
     if (response.statusCode != 200) {
       throw 'Failed to start persona generation: ${response.statusCode} - ${response.body}';
