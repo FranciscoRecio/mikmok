@@ -28,7 +28,7 @@ class _RootLayoutState extends State<RootLayout> {
         context.go('/videos');
         break;
       case 2:
-        context.go('/create');
+        context.go('/scenes');
         break;
       case 3:
         context.go('/models');

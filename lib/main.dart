@@ -14,10 +14,12 @@ import 'screens/video_result_screen.dart';
 import 'screens/avatars_screen.dart';
 import 'screens/avatar_customization_screen.dart';
 import 'screens/models_screen.dart';
+import 'screens/scenes_screen.dart';
 import 'providers/auth_provider.dart';
 import 'providers/avatar_provider.dart';
 import 'providers/persona_provider.dart';
 import 'models/avatar.dart';
+import 'providers/scene_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,6 +39,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => AvatarProvider()),
         ChangeNotifierProvider(create: (_) => PersonaProvider()),
+        ChangeNotifierProvider(create: (_) => SceneProvider()),
       ],
       child: Builder(
         builder: (context) {
@@ -83,10 +86,10 @@ class MyApp extends StatelessWidget {
                 ),
               ),
               GoRoute(
-                path: '/create',
+                path: '/scenes',
                 builder: (context, state) => const RootLayout(
                   selectedIndex: 2,
-                  child: CreateScreen(),
+                  child: ScenesScreen(),
                 ),
               ),
               GoRoute(
