@@ -8,6 +8,7 @@ import '../models/scene.dart';
 import '../providers/avatar_provider.dart';
 import '../models/avatar.dart';
 import '../screens/create_scene_screen.dart';
+import '../screens/scene_prompt_screen.dart';
 
 class ScenesScreen extends StatefulWidget {
   const ScenesScreen({super.key});
@@ -245,8 +246,25 @@ class _ScenesScreenState extends State<ScenesScreen> {
                         height: 48,
                         child: ElevatedButton(
                           onPressed: selectedStartFrame != null && selectedEndFrame != null
-                              ? () {
-                                  // Handle video generation
+                              ? () async {
+                                  final scenes = await Provider.of<SceneProvider>(context, listen: false)
+                                      .getUserScenesForPersona(userId, selectedPersonaId!)
+                                      .first;
+                                  
+                                  final startScene = scenes.firstWhere((s) => s.id == selectedStartFrame);
+                                  final endScene = scenes.firstWhere((s) => s.id == selectedEndFrame);
+                                  
+                                  if (!mounted) return;
+                                  
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => ScenePromptScreen(
+                                        startScene: startScene,
+                                        endScene: endScene,
+                                      ),
+                                    ),
+                                  );
                                 }
                               : null,
                           style: ElevatedButton.styleFrom(
