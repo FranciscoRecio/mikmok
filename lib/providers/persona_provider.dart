@@ -11,8 +11,8 @@ class PersonaProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  Stream<List<Persona>> getUserPersonas(String userId) {
-    return _personaService.getUserPersonas(userId);
+  Stream<List<Persona>> getUserPersonasForAvatar(String userId, String avatarId) {
+    return _personaService.getUserPersonasForAvatar(userId, avatarId);
   }
 
   Future<void> deletePersona(String personaId) async {

@@ -75,4 +75,16 @@ class PersonaService {
 
     return json.decode(response.body) as Map<String, dynamic>;
   }
+
+  Stream<List<Persona>> getUserPersonasForAvatar(String userId, String avatarId) {
+    return _firestore
+        .collection('personas')
+        .where('user_id', isEqualTo: userId)
+        .where('avatar_id', isEqualTo: avatarId)
+        .orderBy('created_at', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => Persona.fromMap(doc.id, doc.data()))
+            .toList());
+  }
 } 
