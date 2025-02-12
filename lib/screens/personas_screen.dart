@@ -85,7 +85,7 @@ class _PersonasScreenState extends State<PersonasScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // TODO: Navigate to create persona screen
+          context.push('/avatars');
         },
         child: const Icon(Icons.add),
       ),

@@ -77,11 +77,11 @@ class _AvatarCustomizationScreenState extends State<AvatarCustomizationScreen> {
             TextField(
               controller: _textController,
               decoration: const InputDecoration(
-                labelText: 'Describe your avatar',
-                hintText: 'E.g., A happy robot with blue eyes',
+                labelText: 'Name',
+                hintText: 'Enter a name for your avatar',
                 border: OutlineInputBorder(),
               ),
-              maxLines: 3,
+              maxLines: 1,
             ),
             const SizedBox(height: 16),
             ElevatedButton(

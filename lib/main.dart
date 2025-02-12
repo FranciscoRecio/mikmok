@@ -127,6 +127,10 @@ class MyApp extends StatelessWidget {
                   persona: state.extra as Persona,
                 ),
               ),
+              GoRoute(
+                path: '/avatars',
+                builder: (context, state) => const AvatarsScreen(),
+              ),
             ],
             initialLocation: '/login',
           );

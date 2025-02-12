@@ -53,18 +53,17 @@ class AvatarProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> updateAvatar(String avatarId, String name, Map<String, dynamic> customization) async {
+  Future<void> updateAvatar(String avatarId, {String? name}) async {
     try {
-      _isLoading = true;
-      _error = null;
-      notifyListeners();
+      final updates = <String, dynamic>{
+        if (name != null) 'name': name,
+        'updated_at': FieldValue.serverTimestamp(),
+      };
 
-      await _avatarService.updateAvatar(avatarId, name, customization);
+      await _firestore.collection('avatars').doc(avatarId).update(updates);
     } catch (e) {
-      _error = e.toString();
-    } finally {
-      _isLoading = false;
-      notifyListeners();
+      print('Error updating avatar: $e');
+      rethrow;
     }
   }
 
@@ -141,5 +140,15 @@ class AvatarProvider extends ChangeNotifier {
 
   Stream<List<Map<String, dynamic>>> getSampleAvatars() {
     return _avatarService.getSampleAvatars();
+  }
+
+  Stream<List<Avatar>> getOtherAvatars(String currentUserId) {
+    return _firestore
+        .collection('avatars')
+        .where('user_id', isNotEqualTo: currentUserId)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => Avatar.fromMap(doc.id, doc.data()))
+            .toList());
   }
 } 
