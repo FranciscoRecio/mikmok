@@ -7,6 +7,7 @@ import '../models/avatar.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../models/persona.dart';
 import '../screens/avatar_detail_screen.dart';
+import '../providers/persona_provider.dart';
 
 class AvatarsScreen extends StatefulWidget {
   const AvatarsScreen({super.key});
@@ -42,7 +43,29 @@ class _AvatarsScreenState extends State<AvatarsScreen> {
               final name = textController.text.trim();
               if (name.isEmpty) return;
               Navigator.pop(dialogContext);
-              // TODO: Add logic to create persona with selected avatar
+              
+              try {
+                final userId = Provider.of<AuthProvider>(context, listen: false).user?.uid;
+                if (userId == null) throw Exception('User not logged in');
+                
+                final taskId = await Provider.of<PersonaProvider>(context, listen: false)
+                    .startGeneration(
+                      name: name,
+                      userId: userId,
+                      avatarId: selectedAvatar!.id,
+                      avatarUrl: selectedAvatar!.imageUrl,
+                    );
+                
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Persona generation started!')),
+                );
+                Navigator.pop(context);  // Return to previous screen
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error creating persona: $e')),
+                );
+              }
             },
             child: const Text('Create'),
           ),
