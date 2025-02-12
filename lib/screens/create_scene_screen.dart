@@ -35,12 +35,24 @@ class _CreateSceneScreenState extends State<CreateSceneScreen> {
 
       try {
         final sceneProvider = Provider.of<SceneProvider>(context, listen: false);
-        final taskId = await sceneProvider.startGeneration(
-          prompt: _promptController.text,
-          userId: widget.persona.userId,
-          personaId: widget.persona.id,
-          personaUrl: widget.persona.imageUrl,
-        );
+        final scenes = await sceneProvider
+            .getUserScenesForPersona(widget.persona.userId, widget.persona.id)
+            .first;
+        final selectedScene = scenes.firstWhere((s) => s.id == _selectedSceneId);
+        
+        final taskId = _extendScene && _selectedSceneId != null
+            ? await sceneProvider.startSceneToSceneGeneration(
+                prompt: _promptController.text,
+                userId: widget.persona.userId,
+                personaId: widget.persona.id,
+                sceneUrl: selectedScene.imageUrl,
+              )
+            : await sceneProvider.startGeneration(
+                prompt: _promptController.text,
+                userId: widget.persona.userId,
+                personaId: widget.persona.id,
+                personaUrl: widget.persona.imageUrl,
+              );
 
         if (!mounted) return;
 

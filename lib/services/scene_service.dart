@@ -70,4 +70,31 @@ class SceneService {
 
     return json.decode(response.body) as Map<String, dynamic>;
   }
+
+  Future<String> startSceneToSceneGeneration({
+    required String prompt,
+    required String userId,
+    required String personaId,
+    required String sceneUrl,
+  }) async {
+    final formData = {
+      'prompt': prompt,
+      'user_id': userId,
+      'persona_id': personaId,
+      'scene_url': sceneUrl,
+    };
+
+    final response = await http.post(
+      Uri.parse('$_baseUrl/generate/scene-to-scene/'),
+      headers: {'Accept': 'application/json'},
+      body: formData,
+    );
+
+    if (response.statusCode != 200) {
+      throw 'Failed to start scene generation: ${response.statusCode} - ${response.body}';
+    }
+
+    final data = json.decode(response.body);
+    return data['task_id'] as String;
+  }
 } 

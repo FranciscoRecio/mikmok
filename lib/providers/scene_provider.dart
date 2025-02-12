@@ -66,4 +66,32 @@ class SceneProvider extends ChangeNotifier {
       throw _error!;
     }
   }
+
+  Future<String> startSceneToSceneGeneration({
+    required String prompt,
+    required String userId,
+    required String personaId,
+    required String sceneUrl,
+  }) async {
+    try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      final taskId = await _sceneService.startSceneToSceneGeneration(
+        prompt: prompt,
+        userId: userId,
+        personaId: personaId,
+        sceneUrl: sceneUrl,
+      );
+
+      return taskId;
+    } catch (e) {
+      _error = e.toString();
+      throw _error!;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 } 
