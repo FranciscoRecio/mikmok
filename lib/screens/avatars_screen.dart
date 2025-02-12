@@ -5,16 +5,10 @@ import '../providers/auth_provider.dart';
 import '../providers/avatar_provider.dart';
 import '../models/avatar.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../models/persona.dart';
 
-class AvatarsScreen extends StatefulWidget {
+class AvatarsScreen extends StatelessWidget {
   const AvatarsScreen({super.key});
-
-  @override
-  State<AvatarsScreen> createState() => _AvatarsScreenState();
-}
-
-class _AvatarsScreenState extends State<AvatarsScreen> {
-  String avatarName = '';
 
   @override
   Widget build(BuildContext context) {
@@ -105,7 +99,7 @@ class _AvatarsScreenState extends State<AvatarsScreen> {
                   mainAxisSpacing: 16,
                 ),
                 delegate: SliverChildBuilderDelegate(
-                  (context, index) => _buildAvatarCard(avatars[index]),
+                  (context, index) => _buildAvatarCard(context, avatars[index]),
                   childCount: avatars.length,
                 ),
               );
@@ -150,7 +144,7 @@ class _AvatarsScreenState extends State<AvatarsScreen> {
                   mainAxisSpacing: 16,
                 ),
                 delegate: SliverChildBuilderDelegate(
-                  (context, index) => _buildSampleAvatarCard(sampleAvatars[index], userId),
+                  (context, index) => _buildSampleAvatarCard(context, sampleAvatars[index], userId),
                   childCount: sampleAvatars.length,
                 ),
               );
@@ -161,11 +155,11 @@ class _AvatarsScreenState extends State<AvatarsScreen> {
     );
   }
 
-  Widget _buildAvatarCard(Avatar avatar) {
+  Widget _buildAvatarCard(BuildContext context, Avatar avatar) {
     return Card(
       child: InkWell(
         onTap: () => context.push('/avatar-customization', extra: avatar),
-        onLongPress: () => _showDeleteDialog(avatar),
+        onLongPress: () => _showDeleteDialog(context, avatar),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -202,58 +196,7 @@ class _AvatarsScreenState extends State<AvatarsScreen> {
     );
   }
 
-  Widget _buildSampleAvatarCard(Map<String, dynamic> avatar, String userId) {
-    final imageUrl = avatar['image_url'] as String;
-    final name = avatar['name'] as String;
-
-    return GestureDetector(
-      onTap: () => _showSaveDialog(userId, name, imageUrl),
-      child: Card(
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.grey[200],
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              SizedBox(
-                width: 80,
-                height: 80,
-                child: SvgPicture.network(
-                  imageUrl,
-                  placeholderBuilder: (context) => const Center(
-                    child: CircularProgressIndicator(),
-                  ),
-                  errorBuilder: (context, error, stackTrace) {
-                    return const Icon(Icons.error_outline, size: 40);
-                  },
-                  width: 80,
-                  height: 80,
-                  fit: BoxFit.contain,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                child: Text(
-                  name,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showDeleteDialog(Avatar avatar) {
+  void _showDeleteDialog(BuildContext context, Avatar avatar) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -296,57 +239,65 @@ class _AvatarsScreenState extends State<AvatarsScreen> {
     );
   }
 
-  void _showSaveDialog(String userId, String name, String imageUrl) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Save Avatar'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
+  Widget _buildSampleAvatarCard(BuildContext context, Map<String, dynamic> avatar, String userId) {
+    final imageUrl = avatar['image_url'] as String;
+    final name = avatar['name'] as String;
+
+    return Card(
+      child: InkWell(
+        onTap: () => _showSaveDialog(context, userId, name, imageUrl),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text('Would you like to save this avatar?'),
-            const SizedBox(height: 16),
-            TextField(
-              decoration: const InputDecoration(
-                labelText: 'Avatar Name',
-                border: OutlineInputBorder(),
+            SizedBox(
+              width: 80,
+              height: 80,
+              child: SvgPicture.network(
+                imageUrl,
+                placeholderBuilder: (context) => const Center(
+                  child: CircularProgressIndicator(),
+                ),
+                width: 80,
+                height: 80,
+                fit: BoxFit.contain,
               ),
-              onChanged: (value) => avatarName = value,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              name,
+              style: Theme.of(context).textTheme.titleMedium,
+              textAlign: TextAlign.center,
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showSaveDialog(BuildContext context, String userId, String name, String imageUrl) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Save Sample Avatar'),
+        content: Text('Would you like to save $name to your avatars?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () => _saveSampleAvatar(userId, name, imageUrl),
+            onPressed: () {
+              Provider.of<AvatarProvider>(context, listen: false)
+                  .saveSampleAvatar(userId, name, imageUrl);
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Avatar saved!')),
+              );
+            },
             child: const Text('Save'),
           ),
         ],
       ),
     );
-  }
-
-  Future<void> _saveSampleAvatar(String userId, String defaultName, String imageUrl) async {
-    try {
-      await Provider.of<AvatarProvider>(context, listen: false)
-          .saveSampleAvatar(
-            userId,
-            avatarName.isNotEmpty ? avatarName : defaultName,
-            imageUrl,
-          );
-      if (!mounted) return;
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Avatar saved successfully!')),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error saving avatar: $e')),
-      );
-    }
   }
 } 

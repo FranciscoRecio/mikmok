@@ -13,8 +13,10 @@ import 'screens/create_screen.dart';
 import 'screens/video_result_screen.dart';
 import 'screens/avatars_screen.dart';
 import 'screens/avatar_customization_screen.dart';
+import 'screens/models_screen.dart';
 import 'providers/auth_provider.dart';
 import 'providers/avatar_provider.dart';
+import 'providers/persona_provider.dart';
 import 'models/avatar.dart';
 
 void main() async {
@@ -34,6 +36,7 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => AvatarProvider()),
+        ChangeNotifierProvider(create: (_) => PersonaProvider()),
       ],
       child: Builder(
         builder: (context) {
@@ -87,6 +90,13 @@ class MyApp extends StatelessWidget {
                 ),
               ),
               GoRoute(
+                path: '/models',
+                builder: (context, state) => const RootLayout(
+                  selectedIndex: 3,
+                  child: ModelsScreen(),
+                ),
+              ),
+              GoRoute(
                 path: '/profile',
                 builder: (context, state) => const RootLayout(
                   selectedIndex: 4,
@@ -97,13 +107,6 @@ class MyApp extends StatelessWidget {
                 path: '/video-result',
                 builder: (context, state) => VideoResultScreen(
                   taskId: state.extra as String,
-                ),
-              ),
-              GoRoute(
-                path: '/avatars',
-                builder: (context, state) => const RootLayout(
-                  selectedIndex: 3,
-                  child: AvatarsScreen(),
                 ),
               ),
               GoRoute(

@@ -31,7 +31,7 @@ class _RootLayoutState extends State<RootLayout> {
         context.go('/create');
         break;
       case 3:
-        context.go('/avatars');
+        context.go('/models');
         break;
       case 4:
         context.go('/profile');
@@ -81,7 +81,7 @@ class _RootLayoutState extends State<RootLayout> {
               ),
               const BottomNavigationBarItem(
                 icon: Icon(Icons.face),
-                label: 'Avatars',
+                label: 'Models',
               ),
               const BottomNavigationBarItem(
                 icon: Icon(Icons.person),
