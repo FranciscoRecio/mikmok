@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import '../models/scene.dart';
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
+import '../services/video_generation_service.dart';
+import '../screens/video_result_screen.dart';
 
 class ScenePromptScreen extends StatefulWidget {
   final Scene startScene;
@@ -104,11 +108,7 @@ class _ScenePromptScreenState extends State<ScenePromptScreen> {
               width: double.infinity,
               height: 48,
               child: ElevatedButton(
-                onPressed: _isLoading
-                    ? null
-                    : () async {
-                        // Handle generation
-                      },
+                onPressed: _isLoading ? null : _handleGenerate,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Theme.of(context).primaryColor,
                   foregroundColor: Colors.white,
@@ -132,5 +132,47 @@ class _ScenePromptScreenState extends State<ScenePromptScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _handleGenerate() async {
+    if (_promptController.text.isEmpty) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final videoService = VideoGenerationService();
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final userId = authProvider.user?.uid;
+
+      if (userId == null) {
+        throw Exception('User not logged in');
+      }
+
+      final taskId = await videoService.generateSceneToVideo(
+        prompt: _promptController.text,
+        userId: userId,
+        startImageUrl: widget.startScene.imageUrl,
+        endImageUrl: widget.endScene.imageUrl,
+      );
+
+      if (!mounted) return;
+
+      // Navigate to result screen and replace this screen
+      await Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => VideoResultScreen(taskId: taskId),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 } 
