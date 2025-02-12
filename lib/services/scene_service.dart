@@ -60,7 +60,7 @@ class SceneService {
 
   Future<Map<String, dynamic>> checkGenerationStatus(String taskId) async {
     final response = await http.get(
-      Uri.parse('$_baseUrl/tasks/$taskId/status/'),
+      Uri.parse('$_baseUrl/status/$taskId'),
       headers: {'Accept': 'application/json'},
     );
 

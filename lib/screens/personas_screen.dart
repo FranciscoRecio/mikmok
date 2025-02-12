@@ -260,14 +260,27 @@ class _PersonasScreenState extends State<PersonasScreen> {
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Started generating new persona...'),
-        ),
-      );
+      // Initial delay to let the task start
+      await Future.delayed(const Duration(seconds: 2));
+
+      // Poll for status
+      bool isComplete = false;
+      while (!isComplete && mounted) {
+        final status = await personaProvider.checkGenerationStatus(taskId);
+        
+        if (status['status'] == 'SUCCESS') {
+          isComplete = true;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Persona generated successfully!')),
+          );
+        } else if (status['status'] == 'FAILURE') {
+          throw status['error'] ?? 'Failed to generate persona';
+        } else {
+          await Future.delayed(const Duration(seconds: 2));
+        }
+      }
     } catch (e) {
       if (!mounted) return;
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error: ${e.toString()}'),

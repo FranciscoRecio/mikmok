@@ -94,4 +94,13 @@ class PersonaProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  Future<Map<String, dynamic>> checkGenerationStatus(String taskId) async {
+    try {
+      return await _personaService.checkGenerationStatus(taskId);
+    } catch (e) {
+      _error = e.toString();
+      throw _error!;
+    }
+  }
 } 

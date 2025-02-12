@@ -41,7 +41,26 @@ class _CreateSceneScreenState extends State<CreateSceneScreen> {
 
         if (!mounted) return;
 
-        Navigator.pop(context, taskId);
+        // Initial delay to let the task start
+        await Future.delayed(const Duration(seconds: 2));
+
+        // Poll for status
+        bool isComplete = false;
+        while (!isComplete && mounted) {
+          final status = await sceneProvider.checkGenerationStatus(taskId);
+          
+          if (status['status'] == 'SUCCESS') {
+            isComplete = true;
+            Navigator.pop(context);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Scene generated successfully!')),
+            );
+          } else if (status['status'] == 'FAILURE') {
+            throw status['error'] ?? 'Failed to generate scene';
+          } else {
+            await Future.delayed(const Duration(seconds: 2));
+          }
+        }
       } catch (e) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
