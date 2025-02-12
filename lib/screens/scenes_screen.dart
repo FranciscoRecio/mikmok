@@ -180,19 +180,26 @@ class _ScenesScreenState extends State<ScenesScreen> {
                         children: [
                           Expanded(
                             child: DropdownButtonFormField<String>(
+                              items: scenes.map((scene) {
+                                return DropdownMenuItem<String>(
+                                  value: scene.id,
+                                  child: Container(
+                                    constraints: const BoxConstraints(maxWidth: 120),
+                                    child: Text(
+                                      scene.name,
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
                               decoration: const InputDecoration(
                                 labelText: 'Start Frame',
                                 border: OutlineInputBorder(),
-                                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                               ),
                               value: selectedStartFrame,
                               autovalidateMode: AutovalidateMode.disabled,
-                              items: scenes.map((scene) {
-                                return DropdownMenuItem(
-                                  value: scene.id,
-                                  child: Text(scene.name),
-                                );
-                              }).toList(),
                               onChanged: (value) {
                                 setState(() {
                                   selectedStartFrame = value;
@@ -203,19 +210,26 @@ class _ScenesScreenState extends State<ScenesScreen> {
                           const SizedBox(width: 16),
                           Expanded(
                             child: DropdownButtonFormField<String>(
+                              items: scenes.map((scene) {
+                                return DropdownMenuItem<String>(
+                                  value: scene.id,
+                                  child: Container(
+                                    constraints: const BoxConstraints(maxWidth: 100),
+                                    child: Text(
+                                      scene.name,
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
                               decoration: const InputDecoration(
                                 labelText: 'End Frame',
                                 border: OutlineInputBorder(),
-                                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                               ),
                               value: selectedEndFrame,
                               autovalidateMode: AutovalidateMode.disabled,
-                              items: scenes.map((scene) {
-                                return DropdownMenuItem(
-                                  value: scene.id,
-                                  child: Text(scene.name),
-                                );
-                              }).toList(),
                               onChanged: (value) {
                                 setState(() {
                                   selectedEndFrame = value;
