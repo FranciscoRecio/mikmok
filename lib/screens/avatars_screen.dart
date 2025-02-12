@@ -8,8 +8,48 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../models/persona.dart';
 import '../screens/avatar_detail_screen.dart';
 
-class AvatarsScreen extends StatelessWidget {
+class AvatarsScreen extends StatefulWidget {
   const AvatarsScreen({super.key});
+
+  @override
+  _AvatarsScreenState createState() => _AvatarsScreenState();
+}
+
+class _AvatarsScreenState extends State<AvatarsScreen> {
+  Avatar? selectedAvatar;
+
+  void _showNameDialog() {
+    final textController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Create Persona'),
+        content: TextField(
+          controller: textController,
+          decoration: const InputDecoration(
+            labelText: 'Name',
+            hintText: 'Enter a name for your persona',
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              final name = textController.text.trim();
+              if (name.isEmpty) return;
+              Navigator.pop(dialogContext);
+              // TODO: Add logic to create persona with selected avatar
+            },
+            child: const Text('Create'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +62,7 @@ class AvatarsScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Choose Avatar Model'),
+        title: const Text('Select Base Model'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
@@ -108,7 +148,7 @@ class AvatarsScreen extends StatelessWidget {
                     mainAxisSpacing: 16,
                   ),
                   delegate: SliverChildBuilderDelegate(
-                    (context, index) => _buildAvatarCard(context, avatars[index]),
+                    (context, index) => _buildAvatarCard(context, avatars[index], showOptions: true),
                     childCount: avatars.length,
                   ),
                 );
@@ -153,7 +193,7 @@ class AvatarsScreen extends StatelessWidget {
                     mainAxisSpacing: 16,
                   ),
                   delegate: SliverChildBuilderDelegate(
-                    (context, index) => _buildAvatarCard(context, otherAvatars[index]),
+                    (context, index) => _buildAvatarCard(context, otherAvatars[index], showOptions: false),
                     childCount: otherAvatars.length,
                   ),
                 );
@@ -162,53 +202,99 @@ class AvatarsScreen extends StatelessWidget {
           ),
         ],
       ),
+      floatingActionButton: selectedAvatar != null
+          ? FloatingActionButton.extended(
+              onPressed: _showNameDialog,
+              icon: const Icon(Icons.add),
+              label: const Text('Generate Persona'),
+            )
+          : null,
     );
   }
 
-  Widget _buildAvatarCard(BuildContext context, Avatar avatar) {
+  Widget _buildAvatarCard(BuildContext context, Avatar avatar, {bool showOptions = false}) {
+    final isSelected = avatar.id == selectedAvatar?.id;
+    
     return Card(
-      child: InkWell(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => AvatarDetailScreen(avatar: avatar),
-            ),
-          );
-        },
-        onLongPress: () => _showDeleteDialog(context, avatar),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (avatar.imageUrl.isNotEmpty) ...[
-              SizedBox(
-                width: 80,
-                height: 80,
-                child: Image.network(
-                  avatar.imageUrl,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return const Center(
-                      child: CircularProgressIndicator(),
-                    );
-                  },
-                  errorBuilder: (context, error, stackTrace) {
-                    return const Icon(Icons.error_outline, size: 40);
-                  },
+      color: isSelected ? Theme.of(context).primaryColor.withOpacity(0.1) : null,
+      child: Stack(
+        fit: StackFit.passthrough,
+        children: [
+          InkWell(
+            onTap: () {
+              setState(() {
+                selectedAvatar = isSelected ? null : avatar;
+              });
+            },
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(
                   width: 80,
                   height: 80,
-                  fit: BoxFit.contain,
+                  child: Image.network(
+                    avatar.imageUrl,
+                    fit: BoxFit.contain,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return const Center(child: CircularProgressIndicator());
+                    },
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Icon(Icons.error_outline, size: 40);
+                    },
+                  ),
                 ),
-              ),
-            ] else
-              const Icon(Icons.account_circle, size: 80, color: Colors.grey),
-            const SizedBox(height: 8),
-            Text(
-              avatar.name,
-              style: Theme.of(context).textTheme.titleMedium,
+                const SizedBox(height: 8),
+                Text(
+                  avatar.name,
+                  style: Theme.of(context).textTheme.titleMedium,
+                  textAlign: TextAlign.center,
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+          if (showOptions)
+            Positioned(
+              top: 4,
+              right: 4,
+              child: PopupMenuButton<String>(
+                onSelected: (value) {
+                  if (value == 'edit') {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => AvatarDetailScreen(avatar: avatar),
+                      ),
+                    );
+                  } else if (value == 'delete') {
+                    _showDeleteDialog(context, avatar);
+                  }
+                },
+                itemBuilder: (BuildContext context) => [
+                  const PopupMenuItem(
+                    value: 'edit',
+                    child: Row(
+                      children: [
+                        Icon(Icons.edit),
+                        SizedBox(width: 8),
+                        Text('Edit'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete, color: Colors.red),
+                        SizedBox(width: 8),
+                        Text('Delete', style: TextStyle(color: Colors.red)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -216,37 +302,28 @@ class AvatarsScreen extends StatelessWidget {
   void _showDeleteDialog(BuildContext context, Avatar avatar) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Delete Avatar'),
         content: Text('Are you sure you want to delete ${avatar.name}?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
-              final scaffoldMessenger = ScaffoldMessenger.of(context);
-              final avatarProvider = Provider.of<AvatarProvider>(context, listen: false);
-              
-              avatarProvider.deleteAvatar(avatar.id);
-              Navigator.pop(context);
-              
-              scaffoldMessenger.showSnackBar(
-                SnackBar(
-                  content: const Text('Avatar deleted'),
-                  action: SnackBarAction(
-                    label: 'Undo',
-                    onPressed: () {
-                      avatarProvider.undoDelete().then((_) {
-                        scaffoldMessenger.showSnackBar(
-                          const SnackBar(content: Text('Avatar restored')),
-                        );
-                      });
-                    },
-                  ),
-                ),
-              );
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              try {
+                await Provider.of<AvatarProvider>(context, listen: false)
+                    .deleteAvatar(avatar.id);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Avatar deleted')),
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error deleting avatar: $e')),
+                );
+              }
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Delete'),
