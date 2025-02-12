@@ -19,6 +19,8 @@ class ScenesScreen extends StatefulWidget {
 class _ScenesScreenState extends State<ScenesScreen> {
   String? selectedAvatarId;
   String? selectedPersonaId;
+  String? selectedStartFrame;
+  String? selectedEndFrame;
 
   @override
   Widget build(BuildContext context) {
@@ -29,135 +31,228 @@ class _ScenesScreenState extends State<ScenesScreen> {
       return const Center(child: Text('Please log in to view scenes'));
     }
 
-    return CustomScrollView(
-      slivers: [
-        SliverPadding(
-          padding: const EdgeInsets.all(16.0),
-          sliver: SliverToBoxAdapter(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Your Scenes',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                _buildAvatarDropdown(userId),
-                const SizedBox(height: 16),
-                if (selectedAvatarId != null) _buildPersonaDropdown(userId),
-                if (selectedPersonaId != null) ...[
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        final personas = await Provider.of<PersonaProvider>(context, listen: false)
-                            .getUserPersonasForAvatar(userId, selectedAvatarId!)
-                            .first;
-                        final selectedPersona = personas.firstWhere(
-                          (p) => p.id == selectedPersonaId,
-                        );
-                        
-                        if (!mounted) return;
-                        
-                        final taskId = await Navigator.push<String>(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => CreateSceneScreen(
-                              persona: selectedPersona,
+    return Scaffold(
+      body: Column(
+        children: [
+          Expanded(
+            child: CustomScrollView(
+              slivers: [
+                SliverPadding(
+                  padding: const EdgeInsets.all(16.0),
+                  sliver: SliverToBoxAdapter(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Your Scenes',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildAvatarDropdown(userId),
+                        const SizedBox(height: 16),
+                        if (selectedAvatarId != null) _buildPersonaDropdown(userId),
+                        if (selectedPersonaId != null) ...[
+                          const SizedBox(height: 24),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 48,
+                            child: ElevatedButton(
+                              onPressed: () async {
+                                final personas = await Provider.of<PersonaProvider>(context, listen: false)
+                                    .getUserPersonasForAvatar(userId, selectedAvatarId!)
+                                    .first;
+                                final selectedPersona = personas.firstWhere(
+                                  (p) => p.id == selectedPersonaId,
+                                );
+                                
+                                if (!mounted) return;
+                                
+                                final taskId = await Navigator.push<String>(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => CreateSceneScreen(
+                                      persona: selectedPersona,
+                                    ),
+                                  ),
+                                );
+
+                                if (taskId != null && mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Started generating new scene...'),
+                                    ),
+                                  );
+                                }
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Theme.of(context).primaryColor,
+                                foregroundColor: Colors.white,
+                              ),
+                              child: const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.add),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'Add New Scene',
+                                    style: TextStyle(fontSize: 16),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                        );
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+                if (selectedPersonaId != null) ...[
+                  SliverPadding(
+                    padding: const EdgeInsets.all(16.0),
+                    sliver: StreamBuilder<List<Scene>>(
+                      stream: Provider.of<SceneProvider>(context)
+                          .getUserScenesForPersona(userId, selectedPersonaId!),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasError) {
+                          return SliverToBoxAdapter(
+                            child: Center(child: Text('Error: ${snapshot.error}')),
+                          );
+                        }
 
-                        if (taskId != null && mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Started generating new scene...'),
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const SliverToBoxAdapter(
+                            child: Center(child: CircularProgressIndicator()),
+                          );
+                        }
+
+                        final scenes = snapshot.data ?? [];
+
+                        if (scenes.isEmpty) {
+                          return const SliverToBoxAdapter(
+                            child: Center(
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(vertical: 32.0),
+                                child: Text(
+                                  'No scenes yet for this persona.\nCreate one to get started!',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ),
                             ),
                           );
                         }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).primaryColor,
-                        foregroundColor: Colors.white,
-                      ),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.add),
-                          SizedBox(width: 8),
-                          Text(
-                            'Add New Scene',
-                            style: TextStyle(fontSize: 16),
+
+                        return SliverGrid(
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 16,
+                            mainAxisSpacing: 16,
                           ),
-                        ],
-                      ),
+                          delegate: SliverChildBuilderDelegate(
+                            (context, index) => _buildSceneCard(scenes[index]),
+                            childCount: scenes.length,
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ],
               ],
             ),
           ),
-        ),
-        if (selectedPersonaId != null) ...[
-          SliverPadding(
-            padding: const EdgeInsets.all(16.0),
-            sliver: StreamBuilder<List<Scene>>(
-              stream: Provider.of<SceneProvider>(context)
-                  .getUserScenesForPersona(userId, selectedPersonaId!),
-              builder: (context, snapshot) {
-                if (snapshot.hasError) {
-                  return SliverToBoxAdapter(
-                    child: Center(child: Text('Error: ${snapshot.error}')),
-                  );
-                }
-
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const SliverToBoxAdapter(
-                    child: Center(child: CircularProgressIndicator()),
-                  );
-                }
-
-                final scenes = snapshot.data ?? [];
-
-                if (scenes.isEmpty) {
-                  return const SliverToBoxAdapter(
-                    child: Center(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(vertical: 32.0),
-                        child: Text(
-                          'No scenes yet for this persona.\nCreate one to get started!',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey,
+          if (selectedPersonaId != null) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: StreamBuilder<List<Scene>>(
+                stream: Provider.of<SceneProvider>(context)
+                    .getUserScenesForPersona(userId, selectedPersonaId!),
+                builder: (context, snapshot) {
+                  final scenes = snapshot.data ?? [];
+                  return Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: DropdownButtonFormField<String>(
+                              decoration: const InputDecoration(
+                                labelText: 'Start Frame',
+                                border: OutlineInputBorder(),
+                                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              ),
+                              value: selectedStartFrame,
+                              autovalidateMode: AutovalidateMode.disabled,
+                              items: scenes.map((scene) {
+                                return DropdownMenuItem(
+                                  value: scene.id,
+                                  child: Text(scene.name),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                setState(() {
+                                  selectedStartFrame = value;
+                                });
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: DropdownButtonFormField<String>(
+                              decoration: const InputDecoration(
+                                labelText: 'End Frame',
+                                border: OutlineInputBorder(),
+                                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              ),
+                              value: selectedEndFrame,
+                              autovalidateMode: AutovalidateMode.disabled,
+                              items: scenes.map((scene) {
+                                return DropdownMenuItem(
+                                  value: scene.id,
+                                  child: Text(scene.name),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                setState(() {
+                                  selectedEndFrame = value;
+                                });
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: ElevatedButton(
+                          onPressed: selectedStartFrame != null && selectedEndFrame != null
+                              ? () {
+                                  // Handle video generation
+                                }
+                              : null,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Theme.of(context).primaryColor,
+                            foregroundColor: Colors.white,
+                          ),
+                          child: const Text(
+                            'Generate Video',
+                            style: TextStyle(fontSize: 16),
                           ),
                         ),
                       ),
-                    ),
+                    ],
                   );
-                }
-
-                return SliverGrid(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                  ),
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) => _buildSceneCard(scenes[index]),
-                    childCount: scenes.length,
-                  ),
-                );
-              },
+                },
+              ),
             ),
-          ),
+          ],
         ],
-      ],
+      ),
     );
   }
 
