@@ -18,7 +18,6 @@ class ScenesScreen extends StatefulWidget {
 }
 
 class _ScenesScreenState extends State<ScenesScreen> {
-  String? selectedAvatarId;
   String? selectedPersonaId;
   String? selectedStartFrame;
   String? selectedEndFrame;
@@ -45,16 +44,14 @@ class _ScenesScreenState extends State<ScenesScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'Your Scenes',
+                          'Your Thumbnails',
                           style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         const SizedBox(height: 16),
-                        _buildAvatarDropdown(userId),
-                        const SizedBox(height: 16),
-                        if (selectedAvatarId != null) _buildPersonaDropdown(userId),
+                        _buildPersonaDropdown(userId),
                         if (selectedPersonaId != null) ...[
                           const SizedBox(height: 24),
                           SizedBox(
@@ -63,7 +60,7 @@ class _ScenesScreenState extends State<ScenesScreen> {
                             child: ElevatedButton(
                               onPressed: () async {
                                 final personas = await Provider.of<PersonaProvider>(context, listen: false)
-                                    .getUserPersonasForAvatar(userId, selectedAvatarId!)
+                                    .getUserPersonas(userId)
                                     .first;
                                 final selectedPersona = personas.firstWhere(
                                   (p) => p.id == selectedPersonaId,
@@ -98,7 +95,7 @@ class _ScenesScreenState extends State<ScenesScreen> {
                                   Icon(Icons.add),
                                   SizedBox(width: 8),
                                   Text(
-                                    'Add New Scene',
+                                    'Add New Thumbnail',
                                     style: TextStyle(fontSize: 16),
                                   ),
                                 ],
@@ -288,100 +285,9 @@ class _ScenesScreenState extends State<ScenesScreen> {
     );
   }
 
-  Widget _buildAvatarDropdown(String userId) {
-    return StreamBuilder<List<Avatar>>(
-      stream: Provider.of<AvatarProvider>(context).getUserAvatars(userId),
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return Text('Error: ${snapshot.error}');
-        }
-
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const CircularProgressIndicator();
-        }
-
-        final avatars = snapshot.data ?? [];
-
-        if (avatars.isEmpty) {
-          return const Text('Create an avatar first to view scenes');
-        }
-
-        // Auto-select first avatar if none selected
-        if (selectedAvatarId == null && avatars.isNotEmpty) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            setState(() {
-              selectedAvatarId = avatars.first.id;
-              selectedPersonaId = null; // Reset persona selection
-            });
-          });
-        }
-
-        final selectedAvatar = avatars.firstWhere(
-          (avatar) => avatar.id == selectedAvatarId,
-          orElse: () => avatars.first,
-        );
-
-        return Row(
-          children: [
-            Expanded(
-              child: DropdownButtonFormField<String>(
-                decoration: const InputDecoration(
-                  labelText: 'Select Avatar',
-                  border: OutlineInputBorder(),
-                ),
-                value: selectedAvatarId ?? avatars.first.id,
-                items: avatars.map((avatar) {
-                  return DropdownMenuItem(
-                    value: avatar.id,
-                    child: Text(avatar.name),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    selectedAvatarId = value;
-                    selectedPersonaId = null; // Reset persona selection when avatar changes
-                  });
-                },
-              ),
-            ),
-            const SizedBox(width: 16),
-            Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: Colors.grey[300]!,
-                  width: 1,
-                ),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  selectedAvatar.imageUrl,
-                  fit: BoxFit.cover,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return const Center(
-                      child: CircularProgressIndicator(),
-                    );
-                  },
-                  errorBuilder: (context, error, stackTrace) {
-                    return const Icon(Icons.error_outline);
-                  },
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   Widget _buildPersonaDropdown(String userId) {
     return StreamBuilder<List<Persona>>(
-      stream: Provider.of<PersonaProvider>(context)
-          .getUserPersonasForAvatar(userId, selectedAvatarId!),
+      stream: Provider.of<PersonaProvider>(context).getUserPersonas(userId),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return Text('Error: ${snapshot.error}');
@@ -397,35 +303,34 @@ class _ScenesScreenState extends State<ScenesScreen> {
           return const Text('Create a persona first to generate scenes');
         }
 
-        // Auto-select first persona if none selected
-        if (selectedPersonaId == null && personas.isNotEmpty) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            setState(() {
-              selectedPersonaId = personas.first.id;
-            });
-          });
-        }
-
-        final selectedPersona = personas.firstWhere(
-          (persona) => persona.id == selectedPersonaId,
-          orElse: () => personas.first,
-        );
+        final selectedPersona = selectedPersonaId != null 
+            ? personas.firstWhere(
+                (p) => p.id == selectedPersonaId,
+                orElse: () => personas.first,
+              )
+            : null;
 
         return Row(
           children: [
             Expanded(
-              child: DropdownButtonFormField<String>(
+              child: DropdownButtonFormField<String?>(
                 decoration: const InputDecoration(
                   labelText: 'Select Persona',
                   border: OutlineInputBorder(),
                 ),
-                value: selectedPersonaId ?? personas.first.id,
-                items: personas.map((persona) {
-                  return DropdownMenuItem(
-                    value: persona.id,
-                    child: Text(persona.name),
-                  );
-                }).toList(),
+                value: selectedPersonaId,
+                items: [
+                  const DropdownMenuItem(
+                    value: null,
+                    child: Text('None'),
+                  ),
+                  ...personas.map((persona) {
+                    return DropdownMenuItem(
+                      value: persona.id,
+                      child: Text(persona.name),
+                    );
+                  }),
+                ],
                 onChanged: (value) {
                   setState(() {
                     selectedPersonaId = value;
@@ -434,33 +339,22 @@ class _ScenesScreenState extends State<ScenesScreen> {
               ),
             ),
             const SizedBox(width: 16),
-            Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: Colors.grey[300]!,
-                  width: 1,
-                ),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
+            if (selectedPersona != null)
+              SizedBox(
+                width: 60,
+                height: 60,
                 child: Image.network(
                   selectedPersona.imageUrl,
                   fit: BoxFit.cover,
                   loadingBuilder: (context, child, loadingProgress) {
                     if (loadingProgress == null) return child;
-                    return const Center(
-                      child: CircularProgressIndicator(),
-                    );
+                    return const Center(child: CircularProgressIndicator());
                   },
                   errorBuilder: (context, error, stackTrace) {
-                    return const Icon(Icons.error_outline);
+                    return const Icon(Icons.error_outline, size: 40);
                   },
                 ),
               ),
-            ),
           ],
         );
       },
