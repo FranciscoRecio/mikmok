@@ -9,6 +9,7 @@ import '../providers/avatar_provider.dart';
 import '../models/avatar.dart';
 import '../screens/create_scene_screen.dart';
 import '../screens/scene_prompt_screen.dart';
+import '../screens/scene_detail_screen.dart';
 
 class ScenesScreen extends StatefulWidget {
   const ScenesScreen({super.key});
@@ -363,38 +364,117 @@ class _ScenesScreenState extends State<ScenesScreen> {
 
   Widget _buildSceneCard(Scene scene) {
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SizedBox(
-              width: 80,
-              height: 80,
-              child: Image.network(
-                scene.imageUrl,
-                loadingBuilder: (context, child, loadingProgress) {
-                  if (loadingProgress == null) return child;
-                  return const Center(
-                    child: CircularProgressIndicator(),
+      child: Stack(
+        fit: StackFit.passthrough,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: 80,
+                  height: 80,
+                  child: Image.network(
+                    scene.imageUrl,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return const Center(
+                        child: CircularProgressIndicator(),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Icon(Icons.error_outline, size: 40);
+                    },
+                    fit: BoxFit.contain,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  scene.name,
+                  style: Theme.of(context).textTheme.titleMedium,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          Positioned(
+            top: 4,
+            right: 4,
+            child: PopupMenuButton<String>(
+              onSelected: (value) {
+                if (value == 'edit') {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => SceneDetailScreen(scene: scene),
+                    ),
                   );
-                },
-                errorBuilder: (context, error, stackTrace) {
-                  return const Icon(Icons.error_outline, size: 40);
-                },
-                fit: BoxFit.contain,
-              ),
+                } else if (value == 'delete') {
+                  _showDeleteDialog(context, scene);
+                }
+              },
+              itemBuilder: (BuildContext context) => [
+                const PopupMenuItem(
+                  value: 'edit',
+                  child: Row(
+                    children: [
+                      Icon(Icons.edit),
+                      SizedBox(width: 8),
+                      Text('Edit'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'delete',
+                  child: Row(
+                    children: [
+                      Icon(Icons.delete, color: Colors.red),
+                      SizedBox(width: 8),
+                      Text('Delete', style: TextStyle(color: Colors.red)),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              scene.name,
-              style: Theme.of(context).textTheme.titleMedium,
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteDialog(BuildContext context, Scene scene) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete Scene'),
+        content: Text('Are you sure you want to delete ${scene.name}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              try {
+                await Provider.of<SceneProvider>(context, listen: false)
+                    .deleteScene(scene.id);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Scene deleted')),
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error deleting scene: $e')),
+                );
+              }
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
       ),
     );
   }

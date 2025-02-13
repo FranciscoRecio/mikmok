@@ -1,12 +1,14 @@
 import 'package:flutter/foundation.dart';
 import '../models/scene.dart';
 import '../services/scene_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class SceneProvider extends ChangeNotifier {
   final SceneService _sceneService = SceneService();
   bool _isLoading = false;
   String? _error;
   Scene? _lastDeletedScene;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   bool get isLoading => _isLoading;
   String? get error => _error;
@@ -92,6 +94,20 @@ class SceneProvider extends ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  Future<void> updateScene(String sceneId, {String? name}) async {
+    try {
+      final updates = <String, dynamic>{
+        if (name != null) 'name': name,
+        'updated_at': FieldValue.serverTimestamp(),
+      };
+
+      await _firestore.collection('scenes').doc(sceneId).update(updates);
+    } catch (e) {
+      print('Error updating scene: $e');
+      rethrow;
     }
   }
 } 
