@@ -144,9 +144,6 @@ class _VideosScreenState extends State<VideosScreen> {
                       ),
                       onSelected: (value) {
                         switch (value) {
-                          case 'pin':
-                            // TODO: Implement pin functionality
-                            break;
                           case 'edit':
                             final videoId = videos[index].id;
                             final videoData = videos[index].data() as Map<String, dynamic>;
@@ -159,16 +156,6 @@ class _VideosScreenState extends State<VideosScreen> {
                         }
                       },
                       itemBuilder: (BuildContext context) => [
-                        const PopupMenuItem<String>(
-                          value: 'pin',
-                          child: Row(
-                            children: [
-                              Icon(Icons.push_pin),
-                              SizedBox(width: 8),
-                              Text('Pin'),
-                            ],
-                          ),
-                        ),
                         const PopupMenuItem<String>(
                           value: 'edit',
                           child: Row(
