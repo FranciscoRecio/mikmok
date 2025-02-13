@@ -57,7 +57,7 @@ class _CreateScreenState extends State<CreateScreen> {
         }
 
         final videoService = VideoGenerationService();
-        final taskId = await videoService.generateVideo(
+        final taskId = await videoService.generateAvatarVideo(
           _promptController.text,
           imageBytes,
           userId,

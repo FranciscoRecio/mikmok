@@ -6,13 +6,13 @@ import '../services/video_generation_service.dart';
 import '../screens/video_result_screen.dart';
 
 class ScenePromptScreen extends StatefulWidget {
-  final Scene startScene;
-  final Scene endScene;
+  final Scene? startScene;
+  final Scene? endScene;
 
   const ScenePromptScreen({
     super.key,
-    required this.startScene,
-    required this.endScene,
+    this.startScene,
+    this.endScene,
   });
 
   @override
@@ -53,20 +53,23 @@ class _ScenePromptScreenState extends State<ScenePromptScreen> {
                 Expanded(
                   child: Column(
                     children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.network(
-                          widget.startScene.imageUrl,
-                          height: 150,
-                          fit: BoxFit.cover,
+                      if (widget.startScene != null) ...[
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(
+                            widget.startScene!.imageUrl,
+                            height: 150,
+                            fit: BoxFit.cover,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Start: ${widget.startScene.name}',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(fontWeight: FontWeight.w500),
-                      ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Start: ${widget.startScene!.name}',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                      ] else
+                        const Text('No start scene selected'),
                     ],
                   ),
                 ),
@@ -74,20 +77,23 @@ class _ScenePromptScreenState extends State<ScenePromptScreen> {
                 Expanded(
                   child: Column(
                     children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.network(
-                          widget.endScene.imageUrl,
-                          height: 150,
-                          fit: BoxFit.cover,
+                      if (widget.endScene != null) ...[
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(
+                            widget.endScene!.imageUrl,
+                            height: 150,
+                            fit: BoxFit.cover,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'End: ${widget.endScene.name}',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(fontWeight: FontWeight.w500),
-                      ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'End: ${widget.endScene!.name}',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                      ] else
+                        const Text('No end scene selected'),
                     ],
                   ),
                 ),
@@ -148,16 +154,20 @@ class _ScenePromptScreenState extends State<ScenePromptScreen> {
         throw Exception('User not logged in');
       }
 
-      final taskId = await videoService.generateSceneToVideo(
-        prompt: _promptController.text,
-        userId: userId,
-        startImageUrl: widget.startScene.imageUrl,
-        endImageUrl: widget.endScene.imageUrl,
-      );
+      final taskId = widget.startScene != null 
+          ? await videoService.generateSceneToVideo(
+              prompt: _promptController.text,
+              userId: userId,
+              startImageUrl: widget.startScene!.imageUrl,
+              endImageUrl: widget.endScene?.imageUrl,
+            )
+          : await videoService.generateVideo(
+              prompt: _promptController.text,
+              userId: userId,
+            );
 
       if (!mounted) return;
 
-      // Navigate to result screen and replace this screen
       await Navigator.pushReplacement(
         context,
         MaterialPageRoute(

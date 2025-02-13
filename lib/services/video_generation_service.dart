@@ -12,7 +12,7 @@ class VideoGenerationService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
 
-  Future<String> generateVideo(String text, List<int> imageBytes, String userId) async {
+  Future<String> generateAvatarVideo(String text, List<int> imageBytes, String userId) async {
     try {
       // Create multipart request
       final request = http.MultipartRequest('POST', Uri.parse('$baseUrl/generate/video/'));
@@ -148,5 +148,29 @@ class VideoGenerationService {
       print('Error updating video: $e');
       rethrow;
     }
+  }
+
+  Future<String> generateVideo({
+    required String prompt,
+    required String userId,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/generate/video/'),
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Accept': 'application/json',
+      },
+      body: {
+        'prompt': prompt,
+        'user_id': userId,
+      },
+    );
+
+    if (response.statusCode != 200) {
+      throw 'Failed to start video generation: ${response.statusCode} - ${response.body}';
+    }
+
+    final data = json.decode(response.body);
+    return data['task_id'] as String;
   }
 } 

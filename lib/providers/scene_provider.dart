@@ -13,8 +13,18 @@ class SceneProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  Stream<List<Scene>> getUserScenesForPersona(String userId, String personaId) {
-    return _sceneService.getUserScenesForPersona(userId, personaId);
+  Stream<List<Scene>> getUserScenesForPersona(String userId, String? personaId) {
+    var query = _firestore.collection('scenes').where('user_id', isEqualTo: userId);
+    
+    if (personaId != null) {
+      query = query.where('persona_id', isEqualTo: personaId);
+    } else {
+      query = query.where('persona_id', isEqualTo: '');
+    }
+    
+    return query.snapshots().map((snapshot) => snapshot.docs
+        .map((doc) => Scene.fromMap(doc.id, doc.data()))
+        .toList());
   }
 
   Future<String> startGeneration({
@@ -109,5 +119,15 @@ class SceneProvider extends ChangeNotifier {
       print('Error updating scene: $e');
       rethrow;
     }
+  }
+
+  Stream<List<Scene>> getUserScenes(String userId) {
+    return _firestore
+        .collection('scenes')
+        .where('user_id', isEqualTo: userId)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => Scene.fromMap(doc.id, doc.data()))
+            .toList());
   }
 } 

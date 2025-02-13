@@ -53,115 +53,119 @@ class _ScenesScreenState extends State<ScenesScreen> {
                         ),
                         const SizedBox(height: 16),
                         _buildPersonaDropdown(userId),
-                        if (selectedPersonaId != null) ...[
-                          const SizedBox(height: 24),
-                          SizedBox(
-                            width: double.infinity,
-                            height: 48,
-                            child: ElevatedButton(
-                              onPressed: () async {
-                                final personas = await Provider.of<PersonaProvider>(context, listen: false)
-                                    .getUserPersonas(userId)
-                                    .first;
-                                final selectedPersona = personas.firstWhere(
-                                  (p) => p.id == selectedPersonaId,
+                        const SizedBox(height: 24),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 48,
+                          child: ElevatedButton(
+                            onPressed: () async {
+                              final personas = await Provider.of<PersonaProvider>(context, listen: false)
+                                  .getUserPersonas(userId)
+                                  .first;
+                              final selectedPersona = selectedPersonaId != null 
+                                  ? personas.firstWhere(
+                                      (p) => p.id == selectedPersonaId,
+                                      orElse: () => personas.first,
+                                    )
+                                  : null;
+                              
+                              if (selectedPersona == null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Please select a persona first')),
                                 );
-                                
-                                if (!mounted) return;
-                                
-                                final taskId = await Navigator.push<String>(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => CreateSceneScreen(
-                                      persona: selectedPersona,
-                                    ),
+                                return;
+                              }
+                              
+                              final taskId = await Navigator.push<String>(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => CreateSceneScreen(
+                                    persona: selectedPersona,
                                   ),
-                                );
+                                ),
+                              );
 
-                                if (taskId != null && mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Started generating new scene...'),
-                                    ),
-                                  );
-                                }
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Theme.of(context).primaryColor,
-                                foregroundColor: Colors.white,
-                              ),
-                              child: const Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.add),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    'Add New Thumbnail',
-                                    style: TextStyle(fontSize: 16),
+                              if (taskId != null && mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Started generating new scene...'),
                                   ),
-                                ],
-                              ),
+                                );
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Theme.of(context).primaryColor,
+                              foregroundColor: Colors.white,
+                            ),
+                            child: const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.add),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Add New Thumbnail',
+                                  style: TextStyle(fontSize: 16),
+                                ),
+                              ],
                             ),
                           ),
-                        ],
+                        ),
                       ],
                     ),
                   ),
                 ),
-                if (selectedPersonaId != null) ...[
-                  SliverPadding(
-                    padding: const EdgeInsets.all(16.0),
-                    sliver: StreamBuilder<List<Scene>>(
-                      stream: Provider.of<SceneProvider>(context)
-                          .getUserScenesForPersona(userId, selectedPersonaId!),
-                      builder: (context, snapshot) {
-                        if (snapshot.hasError) {
-                          return SliverToBoxAdapter(
-                            child: Center(child: Text('Error: ${snapshot.error}')),
-                          );
-                        }
+                SliverPadding(
+                  padding: const EdgeInsets.all(16.0),
+                  sliver: StreamBuilder<List<Scene>>(
+                    stream: Provider.of<SceneProvider>(context)
+                        .getUserScenesForPersona(userId, selectedPersonaId),
+                    builder: (context, snapshot) {
+                      if (snapshot.hasError) {
+                        return SliverToBoxAdapter(
+                          child: Center(child: Text('Error: ${snapshot.error}')),
+                        );
+                      }
 
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return const SliverToBoxAdapter(
-                            child: Center(child: CircularProgressIndicator()),
-                          );
-                        }
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const SliverToBoxAdapter(
+                          child: Center(child: CircularProgressIndicator()),
+                        );
+                      }
 
-                        final scenes = snapshot.data ?? [];
+                      final scenes = snapshot.data ?? [];
 
-                        if (scenes.isEmpty) {
-                          return const SliverToBoxAdapter(
-                            child: Center(
-                              child: Padding(
-                                padding: EdgeInsets.symmetric(vertical: 32.0),
-                                child: Text(
-                                  'No scenes yet for this persona.\nCreate one to get started!',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.grey,
-                                  ),
+                      if (scenes.isEmpty) {
+                        return const SliverToBoxAdapter(
+                          child: Center(
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(vertical: 32.0),
+                              child: Text(
+                                'No scenes yet for this persona.\nCreate one to get started!',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey,
                                 ),
                               ),
                             ),
-                          );
-                        }
-
-                        return SliverGrid(
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 16,
-                            mainAxisSpacing: 16,
-                          ),
-                          delegate: SliverChildBuilderDelegate(
-                            (context, index) => _buildSceneCard(scenes[index]),
-                            childCount: scenes.length,
                           ),
                         );
-                      },
-                    ),
+                      }
+
+                      return SliverGrid(
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 16,
+                        ),
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) => _buildSceneCard(scenes[index]),
+                          childCount: scenes.length,
+                        ),
+                      );
+                    },
                   ),
-                ],
+                ),
               ],
             ),
           ),
@@ -243,14 +247,16 @@ class _ScenesScreenState extends State<ScenesScreen> {
                         width: double.infinity,
                         height: 48,
                         child: ElevatedButton(
-                          onPressed: selectedStartFrame != null && selectedEndFrame != null
+                          onPressed: selectedStartFrame != null
                               ? () async {
                                   final scenes = await Provider.of<SceneProvider>(context, listen: false)
                                       .getUserScenesForPersona(userId, selectedPersonaId!)
                                       .first;
                                   
                                   final startScene = scenes.firstWhere((s) => s.id == selectedStartFrame);
-                                  final endScene = scenes.firstWhere((s) => s.id == selectedEndFrame);
+                                  final endScene = selectedEndFrame != null 
+                                      ? scenes.firstWhere((s) => s.id == selectedEndFrame)
+                                      : null;
                                   
                                   if (!mounted) return;
                                   
