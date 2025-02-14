@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../models/user_model.dart';
 import '../services/user_service.dart';
 import '../providers/auth_provider.dart';
+import '../providers/settings_provider.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -113,6 +114,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       }
                       return null;
                     },
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Avatar Type',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      Row(
+                        children: [
+                          const Text('Custom'),
+                          Consumer<SettingsProvider>(
+                            builder: (context, settings, child) => Switch(
+                              value: settings.isVirtual,
+                              onChanged: (value) => settings.setIsVirtual(value),
+                            ),
+                          ),
+                          const Text('Virtual'),
+                        ],
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 24),
                   SizedBox(

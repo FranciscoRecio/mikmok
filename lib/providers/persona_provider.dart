@@ -106,10 +106,11 @@ class PersonaProvider extends ChangeNotifier {
     }
   }
 
-  Stream<List<Persona>> getUserPersonas(String userId) {
+  Stream<List<Persona>> getUserPersonas(String userId, {required bool isVirtual}) {
     return _firestore
         .collection('personas')
         .where('user_id', isEqualTo: userId)
+        .where('from_photo', isEqualTo: isVirtual)
         .snapshots()
         .map((snapshot) => snapshot.docs
             .map((doc) => Persona.fromFirestore(doc))

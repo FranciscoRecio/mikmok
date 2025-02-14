@@ -8,6 +8,7 @@ class Persona {
   final String name;
   final DateTime createdAt;
   final Map<String, dynamic> metadata;
+  final bool fromPhoto;
 
   Persona({
     required this.id,
@@ -17,6 +18,7 @@ class Persona {
     required this.name,
     required this.createdAt,
     required this.metadata,
+    this.fromPhoto = false,
   });
 
   factory Persona.fromMap(String id, Map<String, dynamic> data) {
@@ -28,6 +30,7 @@ class Persona {
       name: data['name'] as String,
       createdAt: (data['created_at'] as Timestamp).toDate(),
       metadata: data['metadata'] as Map<String, dynamic>,
+      fromPhoto: data['from_photo'] as bool? ?? false,
     );
   }
 
@@ -41,6 +44,7 @@ class Persona {
       imageUrl: data['image_url'],
       createdAt: (data['created_at'] as Timestamp).toDate(),
       metadata: data['metadata'] ?? {},
+      fromPhoto: data['from_photo'] ?? false,
     );
   }
 } 

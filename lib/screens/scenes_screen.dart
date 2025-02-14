@@ -10,6 +10,7 @@ import '../models/avatar.dart';
 import '../screens/create_scene_screen.dart';
 import '../screens/scene_prompt_screen.dart';
 import '../screens/scene_detail_screen.dart';
+import '../providers/settings_provider.dart';
 
 class ScenesScreen extends StatefulWidget {
   const ScenesScreen({super.key});
@@ -60,7 +61,10 @@ class _ScenesScreenState extends State<ScenesScreen> {
                           child: ElevatedButton(
                             onPressed: () async {
                               final personas = await Provider.of<PersonaProvider>(context, listen: false)
-                                  .getUserPersonas(userId)
+                                  .getUserPersonas(
+                                    userId,
+                                    isVirtual: Provider.of<SettingsProvider>(context, listen: false).isVirtual,
+                                  )
                                   .first;
                               final selectedPersona = selectedPersonaId != null 
                                   ? personas.firstWhere(
@@ -294,7 +298,10 @@ class _ScenesScreenState extends State<ScenesScreen> {
 
   Widget _buildPersonaDropdown(String userId) {
     return StreamBuilder<List<Persona>>(
-      stream: Provider.of<PersonaProvider>(context).getUserPersonas(userId),
+      stream: Provider.of<PersonaProvider>(context).getUserPersonas(
+        userId,
+        isVirtual: Provider.of<SettingsProvider>(context).isVirtual,
+      ),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return Text('Error: ${snapshot.error}');

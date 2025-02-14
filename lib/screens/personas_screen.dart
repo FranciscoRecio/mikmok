@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/avatar_provider.dart';
 import '../providers/persona_provider.dart';
+import '../providers/settings_provider.dart';
 import '../models/avatar.dart';
 import '../models/persona.dart';
 import './persona_detail_screen.dart';
@@ -40,7 +41,10 @@ class _PersonasScreenState extends State<PersonasScreen> {
           SliverPadding(
             padding: const EdgeInsets.all(16.0),
             sliver: StreamBuilder<List<Persona>>(
-              stream: Provider.of<PersonaProvider>(context).getUserPersonas(userId),
+              stream: Provider.of<PersonaProvider>(context).getUserPersonas(
+                userId,
+                isVirtual: Provider.of<SettingsProvider>(context).isVirtual,
+              ),
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
                   return SliverToBoxAdapter(

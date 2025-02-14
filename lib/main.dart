@@ -23,6 +23,7 @@ import 'providers/persona_provider.dart';
 import 'models/avatar.dart';
 import 'providers/scene_provider.dart';
 import 'models/persona.dart';
+import 'providers/settings_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -43,6 +44,9 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AvatarProvider()),
         ChangeNotifierProvider(create: (_) => PersonaProvider()),
         ChangeNotifierProvider(create: (_) => SceneProvider()),
+        ChangeNotifierProvider(
+          create: (_) => SettingsProvider(),
+        ),
       ],
       child: Builder(
         builder: (context) {
