@@ -173,27 +173,32 @@ class _ScenesScreenState extends State<ScenesScreen> {
                       Row(
                         children: [
                           Expanded(
-                            child: DropdownButtonFormField<String>(
-                              items: scenes.map((scene) {
-                                return DropdownMenuItem<String>(
-                                  value: scene.id,
-                                  child: Container(
-                                    constraints: const BoxConstraints(maxWidth: 120),
-                                    child: Text(
-                                      scene.name,
-                                      overflow: TextOverflow.ellipsis,
-                                      maxLines: 1,
+                            child: DropdownButtonFormField<String?>(
+                              items: [
+                                const DropdownMenuItem<String?>(
+                                  value: null,
+                                  child: Text('None'),
+                                ),
+                                ...scenes.map((scene) {
+                                  return DropdownMenuItem<String?>(
+                                    value: scene.id,
+                                    child: Container(
+                                      constraints: const BoxConstraints(maxWidth: 120),
+                                      child: Text(
+                                        scene.name,
+                                        overflow: TextOverflow.ellipsis,
+                                        maxLines: 1,
+                                      ),
                                     ),
-                                  ),
-                                );
-                              }).toList(),
+                                  );
+                                }).toList(),
+                              ],
                               decoration: const InputDecoration(
                                 labelText: 'Start Frame',
                                 border: OutlineInputBorder(),
                                 contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                               ),
                               value: selectedStartScene?.id,
-                              autovalidateMode: AutovalidateMode.disabled,
                               onChanged: (value) {
                                 setState(() {
                                   selectedStartScene = value != null 
@@ -205,27 +210,32 @@ class _ScenesScreenState extends State<ScenesScreen> {
                           ),
                           const SizedBox(width: 16),
                           Expanded(
-                            child: DropdownButtonFormField<String>(
-                              items: scenes.map((scene) {
-                                return DropdownMenuItem<String>(
-                                  value: scene.id,
-                                  child: Container(
-                                    constraints: const BoxConstraints(maxWidth: 100),
-                                    child: Text(
-                                      scene.name,
-                                      overflow: TextOverflow.ellipsis,
-                                      maxLines: 1,
+                            child: DropdownButtonFormField<String?>(
+                              items: [
+                                const DropdownMenuItem<String?>(
+                                  value: null,
+                                  child: Text('None'),
+                                ),
+                                ...scenes.map((scene) {
+                                  return DropdownMenuItem<String?>(
+                                    value: scene.id,
+                                    child: Container(
+                                      constraints: const BoxConstraints(maxWidth: 100),
+                                      child: Text(
+                                        scene.name,
+                                        overflow: TextOverflow.ellipsis,
+                                        maxLines: 1,
+                                      ),
                                     ),
-                                  ),
-                                );
-                              }).toList(),
+                                  );
+                                }).toList(),
+                              ],
                               decoration: const InputDecoration(
                                 labelText: 'End Frame',
                                 border: OutlineInputBorder(),
                                 contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                               ),
                               value: selectedEndScene?.id,
-                              autovalidateMode: AutovalidateMode.disabled,
                               onChanged: (value) {
                                 setState(() {
                                   selectedEndScene = value != null 

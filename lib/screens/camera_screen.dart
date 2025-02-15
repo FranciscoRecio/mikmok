@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../providers/persona_provider.dart';
 import '../providers/auth_provider.dart';
 import 'dart:io';
+import 'package:flutter/services.dart';
 
 class CameraScreen extends StatefulWidget {
   const CameraScreen({super.key});
@@ -21,6 +22,9 @@ class _CameraScreenState extends State<CameraScreen> {
   @override
   void initState() {
     super.initState();
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+    ]);
     _initializeCamera();
   }
 
@@ -141,6 +145,12 @@ class _CameraScreenState extends State<CameraScreen> {
 
   @override
   void dispose() {
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
     _controller?.dispose();
     super.dispose();
   }
@@ -170,7 +180,17 @@ class _CameraScreenState extends State<CameraScreen> {
           children: [
             if (_imagePath == null) ...[
               Center(
-                child: CameraPreview(_controller!),
+                child: AspectRatio(
+                  aspectRatio: 3/4, // Portrait aspect ratio
+                  child: ClipRect(
+                    child: Transform.scale(
+                      scale: 1 / _controller!.value.aspectRatio,
+                      child: Center(
+                        child: CameraPreview(_controller!),
+                      ),
+                    ),
+                  ),
+                ),
               ),
               Positioned(
                 bottom: 32,
