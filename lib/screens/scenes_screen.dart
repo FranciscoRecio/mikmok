@@ -11,6 +11,8 @@ import '../screens/create_scene_screen.dart';
 import '../screens/scene_prompt_screen.dart';
 import '../screens/scene_detail_screen.dart';
 import '../providers/settings_provider.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 
 class ScenesScreen extends StatefulWidget {
   const ScenesScreen({super.key});
@@ -406,18 +408,6 @@ class _ScenesScreenState extends State<ScenesScreen> {
             top: 4,
             right: 4,
             child: PopupMenuButton<String>(
-              onSelected: (value) {
-                if (value == 'edit') {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => SceneDetailScreen(scene: scene),
-                    ),
-                  );
-                } else if (value == 'delete') {
-                  _showDeleteDialog(context, scene);
-                }
-              },
               itemBuilder: (BuildContext context) => [
                 const PopupMenuItem(
                   value: 'edit',
@@ -426,6 +416,16 @@ class _ScenesScreenState extends State<ScenesScreen> {
                       Icon(Icons.edit),
                       SizedBox(width: 8),
                       Text('Edit'),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'export',
+                  child: Row(
+                    children: const [
+                      Icon(Icons.file_download),
+                      SizedBox(width: 8),
+                      Text('Export'),
                     ],
                   ),
                 ),
@@ -440,6 +440,41 @@ class _ScenesScreenState extends State<ScenesScreen> {
                   ),
                 ),
               ],
+              onSelected: (value) {
+                if (value == 'edit') {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => SceneDetailScreen(scene: scene),
+                    ),
+                  );
+                } else if (value == 'delete') {
+                  _showDeleteDialog(context, scene);
+                } else if (value == 'export') {
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Image URL'),
+                      content: SelectableText(scene.imageUrl),
+                      actions: [
+                        TextButton(
+                          onPressed: () {
+                            Clipboard.setData(ClipboardData(text: scene.imageUrl));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('URL copied to clipboard')),
+                            );
+                          },
+                          child: const Text('Copy'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Close'),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+              },
             ),
           ),
         ],

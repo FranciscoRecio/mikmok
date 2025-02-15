@@ -5,6 +5,8 @@ import '../providers/auth_provider.dart';
 import '../screens/video_player_screen.dart';
 import '../screens/video_edit_screen.dart';
 import '../services/video_generation_service.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 
 class VideosScreen extends StatefulWidget {
   const VideosScreen({super.key});
@@ -142,19 +144,6 @@ class _VideosScreenState extends State<VideosScreen> {
                           size: 20,
                         ),
                       ),
-                      onSelected: (value) {
-                        switch (value) {
-                          case 'edit':
-                            final videoId = videos[index].id;
-                            final videoData = videos[index].data() as Map<String, dynamic>;
-                            _showEditDialog(videoId, videoData['name'] as String);
-                            break;
-                          case 'delete':
-                            final videoId = videos[index].id;
-                            _deleteVideo(videoId);
-                            break;
-                        }
-                      },
                       itemBuilder: (BuildContext context) => [
                         const PopupMenuItem<String>(
                           value: 'edit',
@@ -163,6 +152,16 @@ class _VideosScreenState extends State<VideosScreen> {
                               Icon(Icons.edit),
                               SizedBox(width: 8),
                               Text('Edit'),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuItem<String>(
+                          value: 'export',
+                          child: Row(
+                            children: [
+                              Icon(Icons.file_download),
+                              SizedBox(width: 8),
+                              Text('Export'),
                             ],
                           ),
                         ),
@@ -177,6 +176,44 @@ class _VideosScreenState extends State<VideosScreen> {
                           ),
                         ),
                       ],
+                      onSelected: (value) {
+                        switch (value) {
+                          case 'edit':
+                            final videoId = videos[index].id;
+                            final videoData = videos[index].data() as Map<String, dynamic>;
+                            _showEditDialog(videoId, videoData['name'] as String);
+                            break;
+                          case 'delete':
+                            final videoId = videos[index].id;
+                            _deleteVideo(videoId);
+                            break;
+                          case 'export':
+                            final videoData = videos[index].data() as Map<String, dynamic>;
+                            showDialog(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: const Text('Video URL'),
+                                content: SelectableText(videoData['video_url'] as String? ?? 'No video URL available'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () {
+                                      Clipboard.setData(ClipboardData(text: videoData['video_url'] as String? ?? ''));
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('URL copied to clipboard')),
+                                      );
+                                    },
+                                    child: const Text('Copy'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context),
+                                    child: const Text('Close'),
+                                  ),
+                                ],
+                              ),
+                            );
+                            break;
+                        }
+                      },
                     ),
                   ),
                 ],
