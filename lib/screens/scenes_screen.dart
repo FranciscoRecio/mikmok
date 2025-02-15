@@ -20,9 +20,9 @@ class ScenesScreen extends StatefulWidget {
 }
 
 class _ScenesScreenState extends State<ScenesScreen> {
-  String? selectedPersonaId;
-  String? selectedStartFrame;
-  String? selectedEndFrame;
+  Persona? selectedPersona;
+  Scene? selectedStartScene;
+  Scene? selectedEndScene;
 
   @override
   Widget build(BuildContext context) {
@@ -59,32 +59,19 @@ class _ScenesScreenState extends State<ScenesScreen> {
                           width: double.infinity,
                           height: 48,
                           child: ElevatedButton(
-                            onPressed: () async {
+                            onPressed: selectedPersona == null ? null : () async {
                               final personas = await Provider.of<PersonaProvider>(context, listen: false)
                                   .getUserPersonas(
                                     userId,
                                     isVirtual: Provider.of<SettingsProvider>(context, listen: false).isVirtual,
                                   )
                                   .first;
-                              final selectedPersona = selectedPersonaId != null 
-                                  ? personas.firstWhere(
-                                      (p) => p.id == selectedPersonaId,
-                                      orElse: () => personas.first,
-                                    )
-                                  : null;
-                              
-                              if (selectedPersona == null) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Please select a persona first')),
-                                );
-                                return;
-                              }
                               
                               final taskId = await Navigator.push<String>(
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => CreateSceneScreen(
-                                    persona: selectedPersona,
+                                    persona: selectedPersona!,
                                   ),
                                 ),
                               );
@@ -122,7 +109,7 @@ class _ScenesScreenState extends State<ScenesScreen> {
                   padding: const EdgeInsets.all(16.0),
                   sliver: StreamBuilder<List<Scene>>(
                     stream: Provider.of<SceneProvider>(context)
-                        .getUserScenesForPersona(userId, selectedPersonaId),
+                        .getUserScenesForPersona(userId, selectedPersona?.id),
                     builder: (context, snapshot) {
                       if (snapshot.hasError) {
                         return SliverToBoxAdapter(
@@ -173,12 +160,12 @@ class _ScenesScreenState extends State<ScenesScreen> {
               ],
             ),
           ),
-          if (selectedPersonaId != null) ...[
+          if (selectedPersona != null) ...[
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: StreamBuilder<List<Scene>>(
                 stream: Provider.of<SceneProvider>(context)
-                    .getUserScenesForPersona(userId, selectedPersonaId!),
+                    .getUserScenesForPersona(userId, selectedPersona!.id),
                 builder: (context, snapshot) {
                   final scenes = snapshot.data ?? [];
                   return Column(
@@ -205,11 +192,13 @@ class _ScenesScreenState extends State<ScenesScreen> {
                                 border: OutlineInputBorder(),
                                 contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                               ),
-                              value: selectedStartFrame,
+                              value: selectedStartScene?.id,
                               autovalidateMode: AutovalidateMode.disabled,
                               onChanged: (value) {
                                 setState(() {
-                                  selectedStartFrame = value;
+                                  selectedStartScene = value != null 
+                                      ? scenes.firstWhere((s) => s.id == value)
+                                      : null;
                                 });
                               },
                             ),
@@ -235,11 +224,13 @@ class _ScenesScreenState extends State<ScenesScreen> {
                                 border: OutlineInputBorder(),
                                 contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                               ),
-                              value: selectedEndFrame,
+                              value: selectedEndScene?.id,
                               autovalidateMode: AutovalidateMode.disabled,
                               onChanged: (value) {
                                 setState(() {
-                                  selectedEndFrame = value;
+                                  selectedEndScene = value != null 
+                                      ? scenes.firstWhere((s) => s.id == value)
+                                      : null;
                                 });
                               },
                             ),
@@ -251,30 +242,18 @@ class _ScenesScreenState extends State<ScenesScreen> {
                         width: double.infinity,
                         height: 48,
                         child: ElevatedButton(
-                          onPressed: selectedStartFrame != null
-                              ? () async {
-                                  final scenes = await Provider.of<SceneProvider>(context, listen: false)
-                                      .getUserScenesForPersona(userId, selectedPersonaId!)
-                                      .first;
-                                  
-                                  final startScene = scenes.firstWhere((s) => s.id == selectedStartFrame);
-                                  final endScene = selectedEndFrame != null 
-                                      ? scenes.firstWhere((s) => s.id == selectedEndFrame)
-                                      : null;
-                                  
-                                  if (!mounted) return;
-                                  
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => ScenePromptScreen(
-                                        startScene: startScene,
-                                        endScene: endScene,
-                                      ),
-                                    ),
-                                  );
-                                }
-                              : null,
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ScenePromptScreen(
+                                  startScene: selectedStartScene,
+                                  endScene: selectedEndScene,
+                                  persona: selectedPersona,
+                                ),
+                              ),
+                            );
+                          },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Theme.of(context).primaryColor,
                             foregroundColor: Colors.white,
@@ -317,13 +296,6 @@ class _ScenesScreenState extends State<ScenesScreen> {
           return const Text('Create a persona first to generate scenes');
         }
 
-        final selectedPersona = selectedPersonaId != null 
-            ? personas.firstWhere(
-                (p) => p.id == selectedPersonaId,
-                orElse: () => personas.first,
-              )
-            : null;
-
         return Row(
           children: [
             Expanded(
@@ -332,7 +304,7 @@ class _ScenesScreenState extends State<ScenesScreen> {
                   labelText: 'Select Persona',
                   border: OutlineInputBorder(),
                 ),
-                value: selectedPersonaId,
+                value: selectedPersona?.id,
                 items: [
                   const DropdownMenuItem(
                     value: null,
@@ -347,7 +319,14 @@ class _ScenesScreenState extends State<ScenesScreen> {
                 ],
                 onChanged: (value) {
                   setState(() {
-                    selectedPersonaId = value;
+                    if (value != null) {
+                      selectedPersona = personas.firstWhere(
+                        (p) => p.id == value,
+                        orElse: () => personas.first,
+                      );
+                    } else {
+                      selectedPersona = null;
+                    }
                   });
                 },
               ),
@@ -358,7 +337,7 @@ class _ScenesScreenState extends State<ScenesScreen> {
                 width: 60,
                 height: 60,
                 child: Image.network(
-                  selectedPersona.imageUrl,
+                  selectedPersona!.imageUrl,
                   fit: BoxFit.cover,
                   loadingBuilder: (context, child, loadingProgress) {
                     if (loadingProgress == null) return child;

@@ -153,24 +153,75 @@ class VideoGenerationService {
   Future<String> generateVideo({
     required String prompt,
     required String userId,
+    String? personaUrl,
+    String? startImageUrl,
+    String? endImageUrl,
   }) async {
-    final response = await http.post(
+    final request = http.MultipartRequest(
+      'POST',
       Uri.parse('$baseUrl/generate/video/'),
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Accept': 'application/json',
-      },
-      body: {
-        'prompt': prompt,
-        'user_id': userId,
-      },
     );
 
-    if (response.statusCode != 200) {
-      throw 'Failed to start video generation: ${response.statusCode} - ${response.body}';
+    request.fields['prompt'] = prompt;
+    request.fields['user_id'] = userId;
+    
+    if (personaUrl != null) {
+      request.fields['persona_url'] = personaUrl;
+    }
+    if (startImageUrl != null) {
+      request.fields['start_image_url'] = startImageUrl;
+    }
+    if (endImageUrl != null) {
+      request.fields['end_image_url'] = endImageUrl;
     }
 
-    final data = json.decode(response.body);
-    return data['task_id'] as String;
+    final response = await request.send();
+    final responseData = await response.stream.bytesToString();
+    final data = json.decode(responseData);
+
+    if (response.statusCode != 200) {
+      throw 'Failed to start video generation: ${response.statusCode} - ${responseData}';
+    }
+
+    return data['task_id'];
+  }
+
+  Future<String> generateSampleVideo(String text, List<int> imageBytes, String userId) async {
+    try {
+      // Create multipart request
+      final request = http.MultipartRequest('POST', Uri.parse('$baseUrl/generate/video/'));
+      request.headers.addAll({
+        'accept': 'application/json',
+      });
+
+      // Add text and required fields
+      request.fields['text'] = text;
+      request.fields['style_params'] = '{}';
+      request.fields['user_id'] = userId;
+      request.fields['is_sample'] = 'true';
+
+      // Add the image file directly from bytes
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'photo',
+          imageBytes,
+          filename: 'avatar.svg',
+          contentType: MediaType('image', 'svg+xml'),
+        ),
+      );
+
+      final response = await request.send();
+      final responseData = await response.stream.bytesToString();
+      final data = json.decode(responseData);
+
+      if (response.statusCode == 200) {
+        return data['task_id'];
+      } else {
+        throw Exception('Failed to generate video: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error generating video: $e');
+      rethrow;
+    }
   }
 } 

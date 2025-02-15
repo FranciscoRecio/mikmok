@@ -130,4 +130,30 @@ class PersonaProvider extends ChangeNotifier {
       rethrow;
     }
   }
+
+  Future<String> startPhotoGeneration({
+    required String userId,
+    required String name,
+    required String photoPath,
+  }) async {
+    try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      final taskId = await _personaService.startPhotoGeneration(
+        userId: userId,
+        name: name,
+        photoPath: photoPath,
+      );
+
+      return taskId;
+    } catch (e) {
+      _error = e.toString();
+      throw _error!;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 } 

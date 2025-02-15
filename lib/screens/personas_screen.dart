@@ -8,6 +8,7 @@ import '../providers/settings_provider.dart';
 import '../models/avatar.dart';
 import '../models/persona.dart';
 import './persona_detail_screen.dart';
+import './camera_screen.dart';
 
 class PersonasScreen extends StatefulWidget {
   const PersonasScreen({super.key});
@@ -89,9 +90,21 @@ class _PersonasScreenState extends State<PersonasScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          context.push('/avatars');
+          final isVirtual = Provider.of<SettingsProvider>(context, listen: false).isVirtual;
+          if (isVirtual) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const CameraScreen()),
+            );
+          } else {
+            context.push('/avatars');
+          }
         },
-        child: const Icon(Icons.add),
+        child: Consumer<SettingsProvider>(
+          builder: (context, settings, child) => Icon(
+            settings.isVirtual ? Icons.camera_alt : Icons.add,
+          ),
+        ),
       ),
     );
   }

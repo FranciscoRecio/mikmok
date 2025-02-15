@@ -97,4 +97,55 @@ class PersonaService {
             .map((doc) => Persona.fromMap(doc.id, doc.data()))
             .toList());
   }
+
+  Future<String> startPhotoGeneration({
+    required String userId,
+    required String name,
+    required String photoPath,
+    int style = 0,
+  }) async {
+    final photoUrl = await uploadPhoto(photoPath, userId);
+    
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('$_baseUrl/generate/photo-to-persona/'),
+    );
+    
+    request.fields['user_id'] = userId;
+    request.fields['avatar_id'] = name;  // Use name as avatar_id
+    request.fields['name'] = name;
+    request.fields['style'] = style.toString();
+    request.fields['avatar_url'] = photoUrl;
+
+    final response = await request.send();
+    final responseData = await response.stream.bytesToString();
+    final data = json.decode(responseData);
+
+    if (response.statusCode != 200) {
+      throw 'Failed to start photo generation: ${response.statusCode}';
+    }
+
+    return data['task_id'];
+  }
+
+  Future<String> uploadPhoto(String photoPath, String userId) async {
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('$_baseUrl/upload/photo/'),
+    );
+    
+    request.fields['user_id'] = userId;
+    request.fields['folder'] = 'temp_photos';
+    request.files.add(await http.MultipartFile.fromPath('file', photoPath));
+
+    final response = await request.send();
+    final responseData = await response.stream.bytesToString();
+    final data = json.decode(responseData);
+
+    if (response.statusCode != 200) {
+      throw 'Failed to upload photo: ${response.statusCode}';
+    }
+
+    return data['url'];
+  }
 } 

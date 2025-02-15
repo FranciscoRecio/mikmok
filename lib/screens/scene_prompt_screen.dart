@@ -4,15 +4,18 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../services/video_generation_service.dart';
 import '../screens/video_result_screen.dart';
+import '../models/persona.dart';
 
 class ScenePromptScreen extends StatefulWidget {
   final Scene? startScene;
   final Scene? endScene;
+  final Persona? persona;
 
   const ScenePromptScreen({
     super.key,
     this.startScene,
     this.endScene,
+    this.persona,
   });
 
   @override
@@ -154,17 +157,13 @@ class _ScenePromptScreenState extends State<ScenePromptScreen> {
         throw Exception('User not logged in');
       }
 
-      final taskId = widget.startScene != null 
-          ? await videoService.generateSceneToVideo(
-              prompt: _promptController.text,
-              userId: userId,
-              startImageUrl: widget.startScene!.imageUrl,
-              endImageUrl: widget.endScene?.imageUrl,
-            )
-          : await videoService.generateVideo(
-              prompt: _promptController.text,
-              userId: userId,
-            );
+      final taskId = await videoService.generateVideo(
+        prompt: _promptController.text,
+        userId: userId,
+        startImageUrl: widget.startScene?.imageUrl,
+        endImageUrl: widget.endScene?.imageUrl,
+        personaUrl: widget.persona?.imageUrl,
+      );
 
       if (!mounted) return;
 
