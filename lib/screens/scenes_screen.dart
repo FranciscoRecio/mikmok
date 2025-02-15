@@ -195,11 +195,14 @@ class _ScenesScreenState extends State<ScenesScreen> {
                                   );
                                 }).toList(),
                               ],
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 labelText: 'Start Frame',
-                                border: OutlineInputBorder(),
-                                contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                border: const OutlineInputBorder(),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                filled: Provider.of<SettingsProvider>(context).isVirtual,
+                                fillColor: const Color(0xFF303030),
                               ),
+                              dropdownColor: Provider.of<SettingsProvider>(context).isVirtual ? const Color(0xFF303030) : null,
                               value: selectedStartScene?.id,
                               onChanged: (value) {
                                 setState(() {
@@ -232,11 +235,14 @@ class _ScenesScreenState extends State<ScenesScreen> {
                                   );
                                 }).toList(),
                               ],
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 labelText: 'End Frame',
-                                border: OutlineInputBorder(),
-                                contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                border: const OutlineInputBorder(),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                filled: Provider.of<SettingsProvider>(context).isVirtual,
+                                fillColor: const Color(0xFF303030),
                               ),
+                              dropdownColor: Provider.of<SettingsProvider>(context).isVirtual ? const Color(0xFF303030) : null,
                               value: selectedEndScene?.id,
                               onChanged: (value) {
                                 setState(() {
@@ -288,10 +294,11 @@ class _ScenesScreenState extends State<ScenesScreen> {
   }
 
   Widget _buildPersonaDropdown(String userId) {
+    final isVirtual = Provider.of<SettingsProvider>(context).isVirtual;
     return StreamBuilder<List<Persona>>(
       stream: Provider.of<PersonaProvider>(context).getUserPersonas(
         userId,
-        isVirtual: Provider.of<SettingsProvider>(context).isVirtual,
+        isVirtual: isVirtual,
       ),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
@@ -311,36 +318,50 @@ class _ScenesScreenState extends State<ScenesScreen> {
         return Row(
           children: [
             Expanded(
-              child: DropdownButtonFormField<String?>(
-                decoration: const InputDecoration(
-                  labelText: 'Select Persona',
-                  border: OutlineInputBorder(),
-                ),
-                value: selectedPersona?.id,
-                items: [
-                  const DropdownMenuItem(
-                    value: null,
-                    child: Text('None'),
+              child: Theme(
+                data: Theme.of(context).copyWith(
+                  dropdownMenuTheme: DropdownMenuThemeData(
+                    menuStyle: MenuStyle(
+                      backgroundColor: MaterialStateProperty.all(
+                        isVirtual ? const Color(0xFF303030) : null,
+                      ),
+                    ),
                   ),
-                  ...personas.map((persona) {
-                    return DropdownMenuItem(
-                      value: persona.id,
-                      child: Text(persona.name),
-                    );
-                  }),
-                ],
-                onChanged: (value) {
-                  setState(() {
-                    if (value != null) {
-                      selectedPersona = personas.firstWhere(
-                        (p) => p.id == value,
-                        orElse: () => personas.first,
+                ),
+                child: DropdownButtonFormField<String?>(
+                  decoration: InputDecoration(
+                    labelText: 'Select Persona',
+                    border: const OutlineInputBorder(),
+                    filled: isVirtual,
+                    fillColor: const Color(0xFF303030),
+                  ),
+                  dropdownColor: isVirtual ? const Color(0xFF303030) : null,
+                  value: selectedPersona?.id,
+                  items: [
+                    const DropdownMenuItem(
+                      value: null,
+                      child: Text('None'),
+                    ),
+                    ...personas.map((persona) {
+                      return DropdownMenuItem(
+                        value: persona.id,
+                        child: Text(persona.name),
                       );
-                    } else {
-                      selectedPersona = null;
-                    }
-                  });
-                },
+                    }),
+                  ],
+                  onChanged: (value) {
+                    setState(() {
+                      if (value != null) {
+                        selectedPersona = personas.firstWhere(
+                          (p) => p.id == value,
+                          orElse: () => personas.first,
+                        );
+                      } else {
+                        selectedPersona = null;
+                      }
+                    });
+                  },
+                ),
               ),
             ),
             const SizedBox(width: 16),
@@ -367,7 +388,11 @@ class _ScenesScreenState extends State<ScenesScreen> {
   }
 
   Widget _buildSceneCard(Scene scene) {
+    final isVirtual = Provider.of<SettingsProvider>(context).isVirtual;
     return Card(
+      color: isVirtual 
+          ? const Color(0xFF303030)  // Dark gray color for virtual mode
+          : Theme.of(context).cardColor,  // Default card color for custom mode
       child: Stack(
         fit: StackFit.passthrough,
         children: [
@@ -408,6 +433,10 @@ class _ScenesScreenState extends State<ScenesScreen> {
             top: 4,
             right: 4,
             child: PopupMenuButton<String>(
+              icon: Icon(
+                Icons.more_vert,
+                color: isVirtual ? Colors.white : Colors.black87,
+              ),
               itemBuilder: (BuildContext context) => [
                 const PopupMenuItem(
                   value: 'edit',
