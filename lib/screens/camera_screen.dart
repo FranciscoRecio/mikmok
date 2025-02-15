@@ -38,8 +38,9 @@ class _CameraScreenState extends State<CameraScreen> {
 
       final controller = CameraController(
         frontCamera,
-        ResolutionPreset.high,
+        ResolutionPreset.medium,
         enableAudio: false,
+        imageFormatGroup: ImageFormatGroup.jpeg,
       );
 
       await controller.initialize();
@@ -143,6 +144,14 @@ class _CameraScreenState extends State<CameraScreen> {
     );
   }
 
+  void onViewFinderTap(TapDownDetails details, BoxConstraints constraints) {
+    final offset = Offset(
+      details.localPosition.dx / constraints.maxWidth,
+      details.localPosition.dy / constraints.maxHeight,
+    );
+    _controller?.setFocusPoint(offset);
+  }
+
   @override
   void dispose() {
     SystemChrome.setPreferredOrientations([
@@ -180,14 +189,17 @@ class _CameraScreenState extends State<CameraScreen> {
           children: [
             if (_imagePath == null) ...[
               Center(
-                child: AspectRatio(
-                  aspectRatio: 3/4, // Portrait aspect ratio
-                  child: ClipRect(
-                    child: Transform.scale(
-                      scale: 1 / _controller!.value.aspectRatio,
-                      child: Center(
-                        child: CameraPreview(_controller!),
-                      ),
+                child: Transform.rotate(
+                  angle: -90 * 3.14159 / 180, // Rotate -90 degrees
+                  child: CameraPreview(
+                    _controller!,
+                    child: LayoutBuilder(
+                      builder: (BuildContext context, BoxConstraints constraints) {
+                        return GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTapDown: (details) => onViewFinderTap(details, constraints),
+                        );
+                      },
                     ),
                   ),
                 ),
