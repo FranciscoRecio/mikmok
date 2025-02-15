@@ -13,7 +13,7 @@ class CameraScreen extends StatefulWidget {
   State<CameraScreen> createState() => _CameraScreenState();
 }
 
-class _CameraScreenState extends State<CameraScreen> {
+class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver {
   CameraController? _controller;
   bool _isLoading = true;
   String? _error;
@@ -22,10 +22,30 @@ class _CameraScreenState extends State<CameraScreen> {
   @override
   void initState() {
     super.initState();
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-    ]);
+    WidgetsBinding.instance.addObserver(this);
     _initializeCamera();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final CameraController? cameraController = _controller;
+
+    if (cameraController == null || !cameraController.value.isInitialized) {
+      return;
+    }
+
+    if (state == AppLifecycleState.inactive) {
+      cameraController.dispose();
+    } else if (state == AppLifecycleState.resumed) {
+      _initializeCamera();
+    }
   }
 
   Future<void> _initializeCamera() async {
@@ -44,6 +64,7 @@ class _CameraScreenState extends State<CameraScreen> {
       );
 
       await controller.initialize();
+      await controller.lockCaptureOrientation();
       
       if (!mounted) return;
       setState(() {
@@ -153,33 +174,13 @@ class _CameraScreenState extends State<CameraScreen> {
   }
 
   @override
-  void dispose() {
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-      DeviceOrientation.portraitDown,
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
-    _controller?.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     if (_error != null) {
-      return Scaffold(
-        body: Center(
-          child: Text('Error: $_error'),
-        ),
-      );
+      return Scaffold(body: Center(child: Text('Error: $_error')));
     }
 
     if (_isLoading || _controller == null || !_controller!.value.isInitialized) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     return Scaffold(
@@ -190,7 +191,7 @@ class _CameraScreenState extends State<CameraScreen> {
             if (_imagePath == null) ...[
               Center(
                 child: Transform.rotate(
-                  angle: -90 * 3.14159 / 180, // Rotate -90 degrees
+                  angle: -90 * 3.14159 / 180,  // Rotate -90 degrees
                   child: CameraPreview(
                     _controller!,
                     child: LayoutBuilder(
@@ -227,9 +228,7 @@ class _CameraScreenState extends State<CameraScreen> {
                 ),
               ),
             ] else ...[
-              Center(
-                child: Image.file(File(_imagePath!)),
-              ),
+              Center(child: Image.file(File(_imagePath!))),
               Positioned(
                 bottom: 32,
                 left: 0,
