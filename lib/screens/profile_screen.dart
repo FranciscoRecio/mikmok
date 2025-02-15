@@ -87,85 +87,101 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return _isLoading
-        ? const Center(child: CircularProgressIndicator())
-        : SingleChildScrollView(
+    return Scaffold(
+      body: CustomScrollView(
+        slivers: [
+          SliverPadding(
             padding: const EdgeInsets.all(16.0),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 48),
-                  Text(
-                    'Email: ${_userProfile?.email ?? ""}',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _displayNameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Display Name',
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter a display name';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 24),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Avatar Type',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      Row(
-                        children: [
-                          const Text('Custom'),
-                          Consumer<SettingsProvider>(
-                            builder: (context, settings, child) => Switch(
-                              value: settings.isVirtual,
-                              onChanged: (value) => settings.setIsVirtual(value),
-                            ),
-                          ),
-                          const Text('Virtual'),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : _updateProfile,
-                      child: _isLoading
-                          ? const CircularProgressIndicator()
-                          : const Text('Update Profile'),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        final authProvider = Provider.of<AuthProvider>(context, listen: false);
-                        await authProvider.signOut();
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                      ),
-                      child: const Text('Logout'),
-                    ),
-                  ),
-                ],
+            sliver: SliverToBoxAdapter(
+              child: Text(
+                'Profile',
+                style: Theme.of(context).textTheme.headlineMedium,
               ),
             ),
-          );
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.all(16.0),
+            sliver: SliverToBoxAdapter(
+              child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Email: ${_userProfile?.email ?? ""}',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _displayNameController,
+                          decoration: const InputDecoration(
+                            labelText: 'Display Name',
+                            border: OutlineInputBorder(),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter a display name';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 24),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Avatar Type',
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            Row(
+                              children: [
+                                const Text('Custom'),
+                                Consumer<SettingsProvider>(
+                                  builder: (context, settings, child) => Switch(
+                                    value: settings.isVirtual,
+                                    onChanged: (value) => settings.setIsVirtual(value),
+                                  ),
+                                ),
+                                const Text('Virtual'),
+                              ],
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 48,
+                          child: ElevatedButton(
+                            onPressed: _isLoading ? null : _updateProfile,
+                            child: _isLoading
+                                ? const CircularProgressIndicator()
+                                : const Text('Update Profile'),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 48,
+                          child: ElevatedButton(
+                            onPressed: () async {
+                              final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                              await authProvider.signOut();
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                            ),
+                            child: const Text('Logout'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 } 

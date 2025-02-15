@@ -48,8 +48,8 @@ class MyApp extends StatelessWidget {
           create: (_) => SettingsProvider(),
         ),
       ],
-      child: Builder(
-        builder: (context) {
+      child: Consumer<SettingsProvider>(
+        builder: (context, settings, child) {
           final authProvider = Provider.of<AuthProvider>(context);
           
           final router = GoRouter(
@@ -140,11 +140,16 @@ class MyApp extends StatelessWidget {
           );
 
           return MaterialApp.router(
-            routerConfig: router,
             title: 'Your App Name',
             theme: ThemeData(
               primarySwatch: Colors.blue,
+              scaffoldBackgroundColor: settings.isVirtual ? Colors.black87 : Colors.white,
+              textTheme: Theme.of(context).textTheme.apply(
+                bodyColor: settings.isVirtual ? Colors.white : Colors.black87,
+                displayColor: settings.isVirtual ? Colors.white : Colors.black87,
+              ),
             ),
+            routerConfig: router,
           );
         },
       ),

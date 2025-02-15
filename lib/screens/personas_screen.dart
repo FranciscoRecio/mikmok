@@ -112,7 +112,11 @@ class _PersonasScreenState extends State<PersonasScreen> {
   }
 
   Widget _buildPersonaCard(Persona persona) {
+    final isVirtual = Provider.of<SettingsProvider>(context).isVirtual;
     return Card(
+      color: isVirtual 
+          ? const Color(0xFF303030)  // Dark gray color for virtual mode
+          : Theme.of(context).cardColor,  // Default card color for custom mode
       child: Stack(
         fit: StackFit.passthrough,
         children: [
@@ -161,6 +165,10 @@ class _PersonasScreenState extends State<PersonasScreen> {
             top: 4,
             right: 4,
             child: PopupMenuButton<String>(
+              icon: Icon(
+                Icons.more_vert,
+                color: isVirtual ? Colors.white : Colors.black87,
+              ),
               itemBuilder: (BuildContext context) => [
                 const PopupMenuItem(
                   value: 'edit',
